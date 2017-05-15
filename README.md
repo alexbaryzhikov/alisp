@@ -25,7 +25,7 @@ Alisp expressions have form
 ```
 (token0 token1 ...)
 ```
-where `token0` is a language instruction/operator, function name or expression that evaluates to function. Other tokens are anything including numbers, variables, expressions and are treated as arguments to `token0`. Language syntax is uniform, so anything you do will resemble this pattern. For example, making a block statement will look like
+where `token0` is a language instruction/operator, function name or expression that evaluates to function. Other tokens are anything including numbers, quoted strings, variables, expressions and are treated as arguments to `token0`. Language syntax is uniform, so anything you do will resemble this pattern. For example, making a block statement will look like
 ```
 (block expr1 expr2...)
 ```
