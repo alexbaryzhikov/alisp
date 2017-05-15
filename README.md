@@ -35,16 +35,16 @@ White spaces and newlines are ignored, but they are required to separate symboli
 ```
 Variable name should not start with a number and may contain any symbols except (, ), ", #, $.
 
-Comments start with '#':
+Comments start with #:
 ```
 # This is a comment
 ```
 ## Language constants
-`NULL`[......]Null object  
-`TRUE`      1  
-`FALSE`     0  
-`E`         Euler constant  
-`PI`        Pi  
+`NULL` | Null object  
+`TRUE` | 1  
+`FALSE` | 0  
+`E` | Euler constant  
+`PI` | Pi  
 
 ## Keywords
 
