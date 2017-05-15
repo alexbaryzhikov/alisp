@@ -40,7 +40,7 @@ Comments start with #:
 # This is a comment
 ```
 ## Language constants
-        |
+Name    | Value
 ------- | -----------
 `NULL`  | Null object  
 `TRUE`  | 1  
