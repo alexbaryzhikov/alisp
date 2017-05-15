@@ -21,7 +21,7 @@ Author: Alex Baryzhikov
 
 ## Quick Manual
 
-Generally all Alisp expressions have form
+Alisp expressions have form
 ```
 (token0 token1 ...)
 ```
@@ -39,30 +39,40 @@ Comments start with '#':
 ```
 # This is a comment
 ```
+## Language constants
+
+`NULL`      Null object
+`TRUE`      1
+`FALSE`     0
+`E`         Euler constant
+`PI`        Pi
 
 ## Keywords
 
 Alisp has the following keywords:
 
-def
-=
-if
-func
-block
-ret
-null?
-print
-println
-inc
-dec
+`def`       define a variable: `(def var [expr])`. If expression is not present then variable initializes to NULL
+`=`         assign a value to a variable: `(= var expr)`.
+`if`        branching instruction: `(if test pro_exp [con_expr])`.
+`func`      create a function: `(func (var ...) expr1 expr2 ...)`. Expressions are function body.
+`block`     create a block statement: `(block expr1 expr2 ...)`. Returns the value of the last expression in a list.
+`ret`       return from a block statement: `(ret expr)`. Interrupts block evaluation and returns a value of an expression.
+`null?`     test if object/expression is a NULL: `(null? expr)`.
+`print`     print arguments to stdout: `(print expr1 expr2 ...)`. Arguments may be quoted strings `"this is string"`.
+`println`   same as `print` but with newline at the end.
+`inc`       increment the value of the argument: `(inc expr)`. Mutates the argument and returns the new value.
+`dec`       decrement the value of the argument: `(dec expr)`. Mutates the argument and returns the new value.
 
 ## Operators
 
-Relational operators have form `(op arg1 arg2)`:
+*Relational* operators have form `(op arg1 arg2)`.
 
-`==` equal, `!=` not equal, `<`  less than, `>`  more than, `<=` less or equal, `>=` more or equal
+- `==` equal, `!=` not equal, `<`  less than, `>`  more than, `<=` less or equal, `>=` more or equal
 
-Logical operators: `and`, `or` have form `(op arg1 arg2 ...)`, unary `not` have form `(op arg)`.
+
+*Logical* operators:
+- `and`, `or` have form `(op arg1 arg2 ...)`
+- unary `not` have form `(op arg)`
 
 
 Arithmetic operators:
@@ -103,15 +113,6 @@ sqrt
 ceil
 abs
 floor
-
-## Language constants
-
-NULL
-TRUE
-FALSE
-E
-PI
-
 
 ## Example program
 
