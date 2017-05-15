@@ -25,7 +25,7 @@ Alisp expressions have form
 ```
 (token0 token1 ...)
 ```
-where `token0` is a language instruction/operator, callable object or expression that evaluates to callable object. Other tokens are anything including numbers, variables, expressions and are viewed as a arguments to `token0`. Language syntax is uniform, so anything you do will have this form. For example, making a block statement will look like
+where `token0` is a language instruction/operator, callable object or expression that evaluates to callable object. Other tokens are anything including numbers, variables, expressions and are viewed as a arguments to `token0`. Language syntax is uniform, so anything you do will resemble this pattern. For example, making a block statement will look like
 ```
 (block expr1 expr2...)
 ```
@@ -71,52 +71,64 @@ Name      | Description
 
 **Relational** operators have form `(op arg1 arg2)`.
 
-- `==` equal, `!=` not equal, `<`  less than, `>`  more than, `<=` less or equal, `>=` more or equal
-
+Name      | Description
+--------- | -----------
+`==`      | equal  
+`!=`      | not equal  
+`<`       | less than  
+`>`       | more than  
+`<=`      | less or equal  
+`>=`      | more or equal  
 
 **Logical** operators:
 - `and`, `or` have form `(op arg1 arg2 ...)`
 - unary `not` have form `(op arg)`
 
+**Arithmetic** operators have form `(op arg1 arg2 ...)`.
 
-**Arithmetic** operators:
+Name      | Description
+--------- | -----------
+`+`       | add
+`-`       | subtract
+`*`       | multiply
+`/`       | divide
+`%`       | remainder of arg1 divided by arg2
 
-+
--
-*
-/
-%
+**Bitwise** operators have form `(op arg1 arg2 ...)`:
 
-**Bitwise** operators:
-&
-|
-^
-~
-<<
->>
+Name      | Description
+--------- | -----------
+`&`       | and
+`|`       | or
+`^`       | xor
+`~`       | flip bits
+`<<`      | left shift
+`>>`      | right shift
 
 **Math** operators:
-acos
-asin
-atan
-atan2
-cos
-cosh
-sin
-sinh
-tanh
 
-exp
-frexp
-ldexp
-log
-log10
-frac
-pow
-sqrt
-ceil
-abs
-floor
+Form          | Description
+------------- | -----------
+`(acos x)`    | arc cosine of x in radians
+`(asin x)`    | arc sine of x in radians
+`(atan x)`    | arc tangent of x in radians
+`(atan2 y x)` | arc tangent in radians of y/x based on the signs of both values to determine the correct quadrant
+`(cos x)`     | cosine of a radian angle x
+`(cosh x)`    | hyperbolic cosine of x
+`(sin x)`     | sine of a radian angle x
+`(sinh x)`    | hyperbolic sine of x
+`(tanh x)`    | hyperbolic tangent of x
+`(exp x)`     | value of e raised to the xth power
+`(frexp x)`   | mantissa of x value: x = mantissa * 2 ^ n
+`(ldexp x y)` | x multiplied by 2 raised to the power of y
+`(log x)`     | natural logarithm (base-e logarithm) of x
+`(log10 x)`   | common logarithm (base-10 logarithm) of x
+`(frac x)`    | fraction component of x (part after the decimal)
+`(pow x, y)`  | x raised to the power of y
+`(sqrt x)`    | square root of x
+`(ceil x)`    | the smallest integer value greater than or equal to x
+`(abs x)`     | absolute value of x
+`(floor x)`   | the largest integer value less than or equal to x
 
 ## Example program
 
