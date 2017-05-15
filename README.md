@@ -40,8 +40,7 @@ Comments start with '#':
 # This is a comment
 ```
 ## Language constants
-|-------------|-------------
-`NULL`      Null object
+`NULL`\tNull object
 `TRUE`      1
 `FALSE`     0
 `E`         Euler constant
