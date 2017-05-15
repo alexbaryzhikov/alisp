@@ -40,7 +40,7 @@ Comments start with '#':
 # This is a comment
 ```
 ## Language constants
-
+|-------------|-------------
 `NULL`      Null object
 `TRUE`      1
 `FALSE`     0
@@ -51,7 +51,7 @@ Comments start with '#':
 
 Alisp has the following keywords:
 
-`def`⋅⋅⋅⋅⋅⋅⋅define a variable: `(def var [expr])`. If expression is not present then variable initializes to NULL.  
+`def`define a variable: `(def var [expr])`. If expression is not present then variable initializes to NULL.  
 `=`         assign a value to a variable: `(= var expr)`.  
 `if`        branching instruction: `(if test pro_exp [con_expr])`.  
 `func`      create a function: `(func (var ...) expr1 expr2 ...)`. Expressions are function body.  
@@ -65,17 +65,17 @@ Alisp has the following keywords:
 
 ## Operators
 
-*Relational* operators have form `(op arg1 arg2)`.
+**Relational** operators have form `(op arg1 arg2)`.
 
 - `==` equal, `!=` not equal, `<`  less than, `>`  more than, `<=` less or equal, `>=` more or equal
 
 
-*Logical* operators:
+**Logical** operators:
 - `and`, `or` have form `(op arg1 arg2 ...)`
 - unary `not` have form `(op arg)`
 
 
-Arithmetic operators:
+**Arithmetic** operators:
 
 +
 -
@@ -83,7 +83,7 @@ Arithmetic operators:
 /
 %
 
-Bitwise operators:
+**Bitwise** operators:
 &
 |
 ^
@@ -91,7 +91,7 @@ Bitwise operators:
 <<
 >>
 
-Math operators:
+**Math** operators:
 acos
 asin
 atan
