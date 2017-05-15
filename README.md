@@ -97,7 +97,7 @@ Name      | Description
 `/`       | divide
 `%`       | remainder of arg1 divided by arg2
 
-**Bitwise** operators have form `(op arg1 arg2 ...)`:
+**Bitwise** operators have form `(op arg1 arg2)`, `~` has form `(op arg)`:
 
 Name      | Description
 --------- | -----------
