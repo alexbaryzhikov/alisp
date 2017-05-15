@@ -64,8 +64,8 @@ Name      | Description
 `null?`   | test if object/expression is a NULL: `(null? expr)`.  
 `print`   | print arguments to stdout: `(print expr1 expr2 ...)`. Arguments may be quoted strings `"this is string"`.  
 `println` | same as `print` but with newline at the end.  
-`inc`     | increment the value of the argument: `(inc expr)`. Mutates the argument and returns the new value.  
-`dec`     | decrement the value of the argument: `(dec expr)`. Mutates the argument and returns the new value.  
+`inc`     | increment the value of the argument: `(inc var)`. Mutates the argument and returns the new value.  
+`dec`     | decrement the value of the argument: `(dec var)`. Mutates the argument and returns the new value.  
 
 ## Operators
 
