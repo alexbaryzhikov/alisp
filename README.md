@@ -41,6 +41,7 @@ Comments start with #:
 ```
 ## Language constants
 `NULL` | Null object  
+------ | -----------
 `TRUE` | 1  
 `FALSE` | 0  
 `E` | Euler constant  
