@@ -102,7 +102,7 @@ Name      | Description
 Name      | Description
 --------- | -----------
 `&`       | and
-`\|`       | or
+`\|`      | or
 `^`       | xor
 `~`       | flip bits
 `<<`      | left shift
