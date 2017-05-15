@@ -79,7 +79,7 @@ safe_free(se);
 
         // -------------------------------------
         // cond             (cond (clause expr)... [(else expr)])
-        if (sym && streq(item[0]->val.sym, "cond")) {
+        } else if (sym && streq(item[0]->val.sym, "cond")) {
             if (elen < 2) {
                 errmsg("Syntax", "poorly formed branching: (cond (clause expr)... [(else expr)])",
                     NULL, NULL);

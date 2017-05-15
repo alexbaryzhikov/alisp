@@ -9,10 +9,14 @@ OBJ = $(patsubst %,$(ODIR)/%,$(OFILES))
 alisp: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(ODIR)/%.o: %.c $(DEPS)
+$(ODIR)/%.o: %.c $(DEPS) $(ODIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(ODIR):
+	mkdir $@
+
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o
+	rm -r $(ODIR)

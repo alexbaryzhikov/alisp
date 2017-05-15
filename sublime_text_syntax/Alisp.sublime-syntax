@@ -1,0 +1,59 @@
+%YAML 1.2
+---
+name: Alisp
+file_extensions: [al]
+scope: source.al
+
+contexts:
+  main:
+    - match: (#.*)
+      scope: comment
+
+    - match: \b(def|list|cond|if|func|block|ret)\b
+      scope: keyword
+
+    - match: (==|!=|<=|>=|<<|>>)
+      scope: keyword.operator
+
+    - match: (=|null\?)
+      scope: keyword
+
+    - match: \b(print|println|inc|dec|and|or|not)\b
+      scope: keyword.operator
+
+    - match: \b(acos|asin|atan|atan2|cos|cosh|sin|sinh|tanh)\b
+      scope: keyword.operator
+
+    - match: \b(exp|frexp|ldexp|log|log10|frac|pow|sqrt|ceil|abs|floor)\b
+      scope: keyword.operator
+
+    - match: (\+|\-|\*|\/|%|&|\||\^|~|<|>)
+      scope: keyword.operator
+
+    - match: \b(NULL|TRUE|FALSE|E|PI)\b
+      scope: constant.language
+
+    - match: \b([.0-9]+)\b
+      scope: constant.numeric
+
+    - match: '"'
+      push: string
+
+    - match: \(
+      push: brackets
+
+    - match: \)
+      scope: invalid
+
+  brackets:
+    - match: \)
+      pop: true
+    - include: main
+
+  string:
+    - meta_scope: string
+    - match: \\.
+      scope: constant.character.escape
+    - match: '"'
+      pop: true
+
