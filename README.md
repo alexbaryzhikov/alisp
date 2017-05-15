@@ -60,7 +60,7 @@ Name      | Description
 `if`      | branching instruction: `(if test pro_exp [con_expr])`.  
 `func`    | create a function: `(func (var ...) expr1 expr2 ...)`. Expressions are function body.  
 `block`   | create a block statement: `(block expr1 expr2 ...)`. Returns the value of the last expression in a list.  
-`ret`     | return from a block statement: `(ret expr)`. Interrupts block evaluation and returns a value of an expression.  
+`ret`     | return from a block statement: `(ret expr)`. Interrupts block evaluation and returns the value of the argument.  
 `null?`   | test if object/expression is a NULL: `(null? expr)`.  
 `print`   | print arguments to stdout: `(print expr1 expr2 ...)`. Arguments may be quoted strings `"this is string"`.  
 `println` | same as `print` but with newline at the end.  
