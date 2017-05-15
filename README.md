@@ -21,6 +21,23 @@ Author: Alex Baryzhikov
 
 ## Quick Manual
 
+To compile Alisp interpreter:
+```
+$ make
+```
+To run Alisp in REPL mode:
+```
+$ ./alisp
+```
+To run script from file:
+```
+$ ./alisp file
+```
+To run script and stay in REPL afterwards:
+```
+$ ./alisp file -i
+```
+
 Alisp expressions have form
 ```
 (token0 token1 ...)
