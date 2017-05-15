@@ -38,6 +38,8 @@ To run script and stay in REPL afterwards:
 $ ./alisp file -i
 ```
 
+## Language syntax
+
 Alisp expressions have form
 ```
 (token0 token1 ...)
