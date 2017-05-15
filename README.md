@@ -81,8 +81,11 @@ Name      | Description
 `>=`      | more or equal  
 
 **Logical** operators:
-- `and`, `or` have form `(op arg1 arg2 ...)`
-- unary `not` have form `(op arg)`
+
+Name        | Description
+----------- | -----------
+`and`, `or` | have form `(op arg1 arg2 ...)`
+`not`       | have form `(op arg)`
 
 **Arithmetic** operators have form `(op arg1 arg2 ...)`.
 
