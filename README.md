@@ -76,7 +76,7 @@ Name      | Description
 --------- | -----------
 `def`     | define a variable: `(def var [expr])`. If expression is not present then variable initializes to NULL.  
 `=`       | assign a value to a variable: `(= var expr)`. Variable must be defined before assignment.  
-`if`      | branching instruction: `(if test pro_exp [con_expr])`.  
+`if`      | branching instruction: `(if test pro_expr [con_expr])`.  
 `cond`    | multi-way branching instruction: `(cond (test expr)[... (else expr)]`.  
 `func`    | create a function: `(func (var ...) expr1 expr2 ...)`. Expressions are function body.  
 `block`   | create a block statement: `(block expr1 expr2 ...)`. Returns the value of the last expression in a list.  
