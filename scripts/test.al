@@ -8,8 +8,11 @@
 (println "Numeric literal: " 3.141592)
 
 # defining variable without initialization
+(println "Defining x without initialization...")
 (def x)
-(println "Is x NULL? " (null? x))
+(if (null? x)
+    (println "OK -- x is NULL")
+    (println "FAIL -- x is not NULL"))
 
 # assignment
 (= x (+ 1 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 2)))))))))
@@ -24,22 +27,33 @@
 
 # branching and block statement
 (if (> x 10)
-    (println (block (def y (* x 2)) "OK -- correct branching"))
-    (println "FAIL -- incorrect branching"))
+    (println (block (def y (* x 2)) "OK -- if"))
+    (println "FAIL -- if"))
 
-(println "Variable defined in the branch block: y = " y)
+(if (== y 200)
+    (println "OK -- Variable defined in the branch block: y = " y)
+    (println "FAIL -- Variable defined in the branch block: y = " y))
+
+# branching-2
+(def a 1)
+(cond 
+    (0         (println "FAIL -- cond"))
+    ((> a 10)  (println "FAIL -- cond"))
+    (else      (print "OK") (println " -- cond")))
 
 # explicit return statement
 (println (block
-    (def z "OK -- block explicitly returned")
+    (def z "OK -- Return from block")
     (if z
-        (ret z)
-        (/ z 2))
-    "FAIL -- returned block end"))
+        (ret z))
+    "FAIL -- Return from block"))
 
 # function returning local value
 (def foo (func() (def x (+ 2 3)) x))
-(println "Returning local value: " (foo))
+(= a (foo))
+(if (== a 5)
+    (println "OK -- Returning local value: " a)
+    (println "FAIL -- Returning local value: " a))
 
 # -----------------------------------------------------------------------------
 # Recursion

@@ -85,11 +85,54 @@ safe_free(se);
                     NULL, NULL);
                 lst_print(expr, 0);
                 return NULL;
+            } else {
+                for (int i = 1; i < elen; ++i)
+                    if (item[i]->type != LIST || lst_len(item[i]) < 2) {
+                        char* o = tostr(item[i]);
+                        errmsg("Syntax", "poorly formed conditional: (test expr [expr...])", o, o);
+                        safe_free(o);
+                        return NULL;
+                    }
             }
 
-            // TODO: cond
+            // Iterate through clauses until test passes or 'else' encountered
+            for (int i = 1; i < elen; ++i) {
+                int clen = lst_len(item[i]);
+                atom_t** clause = item[i]->val.lst;
+                atom_t* test = clause[0];
+                // Assemble clause body
+                atom_t* body;
+                if (clen > 2) {     // provide a block for clause body
+                    body = lst_new();
+                    lst_add(body, sym_new("block"));
+                    for (int j = 1; j < clen; ++j)
+                        lst_add(body, clause[j]);
+                } else              // clause body is a single expression
+                    body = clause[1];
+                // Check if 'else' is encountered
+                if (test->type == SYMBOL && streq(test->val.sym, "else")) {
+                    atom_t* v = eval(body, env, NULL);
+                    atom_del(body);
+                    return v;
+                }
+                // Evaluate test. If it's true -- evaluate body
+                test = eval(test, env, NULL);
+                if (!test)
+                    return NULL;
+                if (!(test->type == NIL ||
+                     (test->type == NUMBER && *test->val.num == 0) ||
+                     (test->type == SYMBOL && strlen(test->val.sym) == 0))) {
+                    atom_del(test);
+                    atom_t* v = eval(body, env, NULL);
+                    atom_del(body);
+                    return v;
+                } else {
+                    atom_del(test);
+                    atom_del(body);
+                }
+            }
 
-            return &nilobj;
+            return &nilobj;  // all clauses failed
 
         // -------------------------------------
         // if               (if test pro [con])
