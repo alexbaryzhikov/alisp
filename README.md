@@ -40,7 +40,7 @@ $ ./alisp file -i
 
 ## Language syntax
 
-Alisp expressions have form
+Alisp program is a hierarchy of expressions. If you write multiple expressions on the outermost level then the "root" expression is a block statement, and provided automatically. Alisp expressions have form
 ```
 (token0 token1 ...)
 ```
