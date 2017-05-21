@@ -95,9 +95,9 @@ Name      | Description
 `println` | same as `print` but with newline at the end.  
 
 **List** operators.
-Name      | Description
------------------------------ | -----------
-`(list [elements...])`        | create a list
+Name                             | Description
+-------------------------------- | ---------------------------------------
+`(list [elements...])`           | create a list
 `(list_get list index [index2])` | return an item at `index` or sublist in range [`index`, `index2`)
 `(list_len list)`                | length of `list`
 `(list_add list item [...])`     | append `item`(s) to `list`
