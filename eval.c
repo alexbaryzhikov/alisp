@@ -536,7 +536,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
             return num(proc->val.op_rel(SYMBOL, argv[0]->val.sym, argv[1]->val.sym));
 
     // -------------------------------------
-    // list             (list [elements...])
+    // list             (list [items...])
     } else if (proc->optype == LIST_NEW) {
         atom_t* v = lst();
         // Assemble list
@@ -559,7 +559,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         }
         atom_t* list = argv[0];
         int llen = lst_len(list);
-        // Return single element
+        // Return single item
         if (argc == 2) {  
             // Evaluate index
             atom_t* index = argv[1];
@@ -618,10 +618,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         return num(lst_len(argv[0]));
 
     // -------------------------------------
-    // list_add         (list_add list element [...])
+    // list_add         (list_add list item [...])
     } else if (proc->optype == LIST_ADD) {
         if (argc < 2) {
-            errmsg("Syntax", "too few arguments: (list_add list element [...])", NULL, NULL);
+            errmsg("Syntax", "too few arguments: (list_add list item [...])", NULL, NULL);
             lst_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
@@ -634,10 +634,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         return argv[0];
 
     // -------------------------------------
-    // list_ins         (list_ins list index element)
+    // list_ins         (list_ins list index item)
     } else if (proc->optype == LIST_INS) {
         if (argc != 3) {
-            errmsg("Syntax", "wrong number of arguments: (list_ins list index element)", NULL, NULL);
+            errmsg("Syntax", "wrong number of arguments: (list_ins list index item)", NULL, NULL);
             lst_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
@@ -657,7 +657,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
             (int)(*index->val.num);
         if (idx < 0)
             idx = 0;
-        // Insert element to list
+        // Insert item to list
         lst_ins(argv[0], idx, argv[2]);
         return argv[0];
 
@@ -688,7 +688,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
             lst_print(expr, 0);
             return NULL;
         }
-        // Delete element from list
+        // Delete item from list
         lst_del(argv[0], idx);
         return argv[0];
 

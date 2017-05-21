@@ -49,7 +49,7 @@ void lst_ins(atom_t* list, int index, atom_t* item) {
         // insert item at the end of the list
         index = sz;
     else
-        // shift elements to free space
+        // shift items to free space
         memmove(list->val.lst + index + 1, list->val.lst + index, (sz - index + 1) * sizeof(atom_t*));
     list->val.lst[index] = item;
     ++item->bindings;
