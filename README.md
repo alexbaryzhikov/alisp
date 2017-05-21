@@ -96,7 +96,7 @@ Name      | Description
 
 **List** operators.
 
-Name                             | Description
+Form                             | Description
 -------------------------------- | ---------------------------------------
 `(list [elements...])`           | create a list
 `(list_get list index [index2])` | return an item at `index` or sublist in range [`index`, `index2`)
