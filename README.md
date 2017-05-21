@@ -98,7 +98,7 @@ Name      | Description
 
 Form                             | Description
 -------------------------------- | ---------------------------------------
-`(list [elements...])`           | create a list
+`(list [items...])`              | create a list
 `(list_get list index [index2])` | return an item at `index` or sublist in range [`index`, `index2`)
 `(list_len list)`                | length of `list`
 `(list_add list item [...])`     | append `item`(s) to `list`
