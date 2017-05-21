@@ -7,6 +7,7 @@ Features:
 - whole range of math and logical operators
 - output to stdout
 - variables + assignment
+- lists
 - branching
 - compound expressions
 - functions + recursion
