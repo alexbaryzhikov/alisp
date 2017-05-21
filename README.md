@@ -95,6 +95,7 @@ Name      | Description
 `println` | same as `print` but with newline at the end.  
 
 **List** operators.
+
 Name                             | Description
 -------------------------------- | ---------------------------------------
 `(list [elements...])`           | create a list
