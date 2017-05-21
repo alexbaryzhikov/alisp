@@ -84,12 +84,12 @@ void safe_memory_free(void** p_addr) {
 // Strings
 
 /* Return symbolic string with quotes stripped. */
-atom_t* strip_quotes(atom_t* a) {
-    size_t alen = strlen(a->val.sym);
-    char buf[alen - 1];
-    strncpy(buf, a->val.sym + 1, alen - 2);
+char* strip_quotes(char* a) {
+    size_t alen = strlen(a);
+    char* buf = malloc(alen - 1);
+    strncpy(buf, a + 1, alen - 2);
     buf[alen - 2] = '\0';
-    return sym_new(buf);
+    return buf;
 }
 
 /* Return true if strings are equal, false otherwise. */

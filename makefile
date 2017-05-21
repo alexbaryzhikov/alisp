@@ -3,17 +3,15 @@ CFLAGS = -Wall -I.
 LIBS = -lm
 DEPS = alisp.h
 ODIR = obj
-OFILES = main.o eval.o parser.o types.o globenv.o edict.o utils.o
+OFILES = main.o eval.o parser.o types.o list.o edict.o globenv.o operators.o utils.o
 OBJ = $(patsubst %,$(ODIR)/%,$(OFILES))
 
 alisp: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(ODIR)/%.o: %.c $(DEPS) $(ODIR)
+$(ODIR)/%.o: %.c $(DEPS)
+	@mkdir -p $(ODIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(ODIR):
-	mkdir $@
 
 
 .PHONY: clean

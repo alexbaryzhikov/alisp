@@ -42,8 +42,8 @@ atom_t* parse() {
 
     } else {                        // multiple items
         atom_t* ptree;
-        ptree = lst_new();
-        lst_add(ptree, sym_new("block"));
+        ptree = lst();
+        lst_add(ptree, sym("block"));
         lst_add(ptree, item);
 
         while (tok != tok_end) {
@@ -68,7 +68,7 @@ atom_t* read_from_tokens() {
     }
     token_t* token = *tok++;
     if (!strcmp(token->val, "(")) {
-        atom_t* list = lst_new();
+        atom_t* list = lst();
         atom_t* a;
         while (strcmp((*tok)->val, ")")) {
             if ((a = read_from_tokens()))
@@ -95,12 +95,12 @@ atom_t* make_atom(token_t* token) {
     char* t;
     double x = strtod(token->val, &t);
     if (*t == '\0') {
-        return num_new(x);      // number
+        return num(x);      // number
     } else if (x) {
         errmsg("Syntax", "invalid symbol", token->pos, input);
         return NULL;
     } else {
-        return sym_new(token->val);   // symbol
+        return sym(token->val);   // symbol
     }
 }
 

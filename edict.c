@@ -21,12 +21,12 @@ klookup_t klookup(edict_t*, char*);
 
 /*
 --------------------------------------
-edict_new
+edict
 
     Create a new dictionary.
 --------------------------------------
 */
-edict_t* edict_new(unsigned size, edict_t* parent) {
+edict_t* edict(unsigned size, edict_t* parent) {
     unsigned n = 1;
     while (n < size)
         n <<= 1;  // pick pow-of-2 n that is greater or equal to size
@@ -70,10 +70,8 @@ void edict_add(edict_t* d, char* key, atom_t* value) {
     // insert the key
     if (kl.miss) {
         // offset keys and values to make a free spot
-        for (unsigned i = d->len; i > kl.idx; i--) {
-            d->keys[i] = d->keys[i-1];
-            d->vals[i] = d->vals[i-1];
-        }
+        memmove(d->keys + kl.idx + 1, d->keys + kl.idx, (d->len - kl.idx) * sizeof(char*));
+        memmove(d->vals + kl.idx + 1, d->vals + kl.idx, (d->len - kl.idx) * sizeof(atom_t*));
         ++d->len;
         // insert new key
         d->keys[kl.idx] = (char*)malloc(strlen(key) + 1);

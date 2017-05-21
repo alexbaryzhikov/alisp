@@ -12,7 +12,8 @@
 enum { NIL, NUMBER, SYMBOL, LIST, LIST_EMPTY, EOLIST, STD_OP, FUNCTION };
 
 /* Standard operator types */
-enum { PRINT, PRINTLN, MATH1, MATH1_M, MATH2, MATH2_R, REL };
+enum { PRINT, PRINTLN, MATH1, MATH1_M, MATH2, MATH2_R, REL, LIST_NEW, LIST_GET, LIST_LEN, 
+    LIST_ADD, LIST_INS, LIST_DEL, LIST_MERGE };
 
 typedef struct Atom  atom_t;
 typedef struct Edict edict_t;
@@ -33,6 +34,7 @@ typedef struct Atom {
         atom_t**   lst;
         double     (*op_math1)(double);
         double     (*op_math2)(double, double);
+        double     (*op_rel)(int, void*, void*);
         closure_t* closure;
     } val;
     char type;
@@ -41,37 +43,13 @@ typedef struct Atom {
 } atom_t;
 
 extern atom_t nilobj;
-extern atom_t list_emptyobj;
-extern atom_t eolistobj;
 
 /* Numbers and symbols */
-atom_t*  num_new(double);
-atom_t*  sym_new(const char*);
-
-/* Operators */
-atom_t*  op_print_new();
-atom_t*  op_println_new();
-atom_t*  op_math1_new(double (*op)(double));
-atom_t*  op_math1m_new(double (*op)(double));
-atom_t*  op_math2_new(double (*op)(double, double));
-atom_t*  op_math2r_new(double (*op)(double, double));
-atom_t*  op_rel_new(double (*op)(double, double));
+atom_t*  num(double);
+atom_t*  sym(const char*);
 
 /* Functions */
-atom_t*  func_new(atom_t*, atom_t*, edict_t*);
-
-/* Lists */
-atom_t*  lst_new(void);
-void     lst_add(atom_t*, atom_t*);
-char*    lst_tostr(atom_t*, int);
-void     lst_print(atom_t*, int);
-
-void     lst_assert(atom_t*);
-unsigned lst_len(atom_t*);
-unsigned lst_maxlen(atom_t*);
-void     lst_expand(atom_t*);
-void     lst_pr_lin(atom_t*, int);
-void     lst_pr_exp(atom_t*, int, int);
+atom_t*  func(atom_t*, atom_t*, edict_t*);
 
 /* Common methods */
 void     safe_atom_del(void**);
@@ -80,6 +58,26 @@ atom_t*  atom_copy(atom_t*);
 char*    type(atom_t*);
 
 #define atom_del(ptr) safe_atom_del((void**) &(ptr))
+
+
+// ---------------------------------------------------------------------- 
+// list.c
+
+extern atom_t list_emptyobj;
+extern atom_t eolistobj;
+
+atom_t*  lst(void);
+void     lst_ins(atom_t*, int, atom_t*);
+#define  lst_add(list, item) lst_ins(list, -1, item)
+void     lst_del(atom_t*, int);
+char*    lst_tostr(atom_t*, int);
+void     lst_print(atom_t*, int);
+void     lst_assert(atom_t*);
+unsigned lst_len(atom_t*);
+unsigned lst_maxlen(atom_t*);
+void     lst_expand(atom_t*);
+void     lst_pr_lin(atom_t*, int);
+void     lst_pr_exp(atom_t*, int, int);
 
 
 // ---------------------------------------------------------------------- 
@@ -97,7 +95,7 @@ typedef struct Edict {
     char     lock;
 } edict_t;
 
-edict_t* edict_new(unsigned, edict_t*);
+edict_t* edict(unsigned, edict_t*);
 void     edict_add(edict_t*, char*, atom_t*);
 atom_t*  edict_get(edict_t*, char*);
 edict_t* edict_find(edict_t*, char*);
@@ -113,50 +111,6 @@ extern edict_t* global_env;
 
 void globenv_init(void);
 void globenv_del(void);
-
-double op_add(double, double);
-double op_sub(double, double);
-double op_mul(double, double);
-double op_div(double, double);
-double op_mod(double, double);
-double op_inc(double);
-double op_dec(double);
-double op_eq(double, double);
-double op_ne(double, double);
-double op_lt(double, double);
-double op_gt(double, double);
-double op_le(double, double);
-double op_ge(double, double);
-double op_and(double, double);
-double op_or(double, double);
-double op_not(double);
-double op_band(double, double);
-double op_bor(double, double);
-double op_bxor(double, double);
-double op_bnot(double);
-double op_blsh(double, double);
-double op_brsh(double, double);
-double op_acos(double);
-double op_asin(double);
-double op_atan(double);
-double op_atan2(double, double);
-double op_cos(double);
-double op_cosh(double);
-double op_sin(double);
-double op_sinh(double);
-double op_tanh(double);
-double op_exp(double);
-double op_frexp(double);
-double op_ldexp(double, double);
-double op_log(double);
-double op_log10(double);
-double op_modf(double);
-double op_pow(double, double);
-double op_sqrt(double);
-double op_ceil(double);
-double op_fabs(double);
-double op_floor(double);
-double op_fmod(double, double);
 
 
 // ---------------------------------------------------------------------- 
@@ -215,8 +169,72 @@ void    safe_memory_free(void**);
 #define safe_free(ptr) safe_memory_free((void**) &(ptr))
 
 /* Strings */
-atom_t* strip_quotes(atom_t*);
+char*   strip_quotes(char*);
 int     streq(const char*, const char*);
 
 
-#endif
+// ---------------------------------------------------------------------- 
+// operators.c
+
+atom_t*  op_print();
+atom_t*  op_println();
+atom_t*  op_math1(double (*op)(double));
+atom_t*  op_math1m(double (*op)(double));
+atom_t*  op_math2(double (*op)(double, double));
+atom_t*  op_math2r(double (*op)(double, double));
+atom_t*  op_rel(double (*op)(int, void*, void*));
+atom_t*  op_list();
+atom_t*  op_list_get();
+atom_t*  op_list_len();
+atom_t*  op_list_add();
+atom_t*  op_list_ins();
+atom_t*  op_list_del();
+atom_t*  op_list_merge();
+
+double op_add(double, double);
+double op_sub(double, double);
+double op_mul(double, double);
+double op_div(double, double);
+double op_mod(double, double);
+double op_inc(double);
+double op_dec(double);
+double op_eq(int, void*, void*);
+double op_ne(int, void*, void*);
+double op_lt(int, void*, void*);
+double op_gt(int, void*, void*);
+double op_le(int, void*, void*);
+double op_ge(int, void*, void*);
+double op_and(double, double);
+double op_or(double, double);
+double op_not(double);
+double op_band(double, double);
+double op_bor(double, double);
+double op_bxor(double, double);
+double op_bnot(double);
+double op_blsh(double, double);
+double op_brsh(double, double);
+double op_acos(double);
+double op_asin(double);
+double op_atan(double);
+double op_atan2(double, double);
+double op_cos(double);
+double op_cosh(double);
+double op_sin(double);
+double op_sinh(double);
+double op_tanh(double);
+double op_exp(double);
+double op_frexp(double);
+double op_ldexp(double, double);
+double op_log(double);
+double op_log10(double);
+double op_modf(double);
+double op_pow(double, double);
+double op_sqrt(double);
+double op_ceil(double);
+double op_fabs(double);
+double op_floor(double);
+double op_fmod(double, double);
+
+
+# endif
+

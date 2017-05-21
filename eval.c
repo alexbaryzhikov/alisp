@@ -43,7 +43,7 @@ safe_free(se);
     if (expr->type == SYMBOL) {
         
         if (expr->val.sym[0] == '"')
-            return strip_quotes(expr);          // quoted string
+            return expr;                        // quoted string
         
         atom_t* v = edict_get(env, expr->val.sym);
         if (v)
@@ -65,21 +65,13 @@ safe_free(se);
         // -------------------------------------
         // empty list       ()
         if (elen == 0)
-            return &nilobj;
+            return lst();
 
-        int sym = item[0]->type == SYMBOL;
-
-        // -------------------------------------
-        // list             (list [elements...])
-        if (sym && streq(item[0]->val.sym, "list")) {
-
-            // TODO: list
-
-            return &nilobj;
+        int is_sym = item[0]->type == SYMBOL;
 
         // -------------------------------------
         // cond             (cond (clause expr)... [(else expr)])
-        } else if (sym && streq(item[0]->val.sym, "cond")) {
+        if (is_sym && streq(item[0]->val.sym, "cond")) {
             if (elen < 2) {
                 errmsg("Syntax", "poorly formed branching: (cond (clause expr)... [(else expr)])",
                     NULL, NULL);
@@ -103,15 +95,15 @@ safe_free(se);
                 // Assemble clause body
                 atom_t* body;
                 if (clen > 2) {     // provide a block for clause body
-                    body = lst_new();
-                    lst_add(body, sym_new("block"));
+                    body = lst();
+                    lst_add(body, sym("block"));
                     for (int j = 1; j < clen; ++j)
                         lst_add(body, clause[j]);
                 } else              // clause body is a single expression
                     body = clause[1];
                 // Check if 'else' is encountered
                 if (test->type == SYMBOL && streq(test->val.sym, "else")) {
-                    atom_t* v = eval(body, env, NULL);
+                    atom_t* v = eval(body, env, ret);
                     atom_del(body);
                     return v;
                 }
@@ -121,9 +113,10 @@ safe_free(se);
                     return NULL;
                 if (!(test->type == NIL ||
                      (test->type == NUMBER && *test->val.num == 0) ||
-                     (test->type == SYMBOL && strlen(test->val.sym) == 0))) {
+                     (test->type == SYMBOL && strlen(test->val.sym) == 0) ||
+                     (test->type == LIST && lst_len(test) == 0))) {
                     atom_del(test);
-                    atom_t* v = eval(body, env, NULL);
+                    atom_t* v = eval(body, env, ret);
                     atom_del(body);
                     return v;
                 } else {
@@ -136,7 +129,7 @@ safe_free(se);
 
         // -------------------------------------
         // if               (if test pro [con])
-        } else if (sym && streq(item[0]->val.sym, "if")) {
+        } else if (is_sym && streq(item[0]->val.sym, "if")) {
             if (elen < 3 || elen > 4) {
                 errmsg("Syntax", "poorly formed branching: (if test pro [con])", NULL, NULL);
                 lst_print(expr, 0);
@@ -147,7 +140,8 @@ safe_free(se);
                 return NULL;
             if (test->type == NIL ||
                (test->type == NUMBER && *test->val.num == 0) ||
-               (test->type == SYMBOL && strlen(test->val.sym) == 0)) {
+               (test->type == SYMBOL && strlen(test->val.sym) == 0) ||
+               (test->type == LIST && lst_len(test) == 0)) {
                 atom_del(test);
                 if (elen == 4)
                     return eval(item[3], env, ret);
@@ -159,7 +153,7 @@ safe_free(se);
 
         // -------------------------------------
         // def              (def var [expr])
-        } else if (sym && streq(item[0]->val.sym, "def")) {
+        } else if (is_sym && streq(item[0]->val.sym, "def")) {
             if (elen < 2 || elen > 3) {
                 errmsg("Syntax", "poorly formed definition: (def var [expr])", NULL, NULL);
                 lst_print(expr, 0);
@@ -190,7 +184,7 @@ safe_free(se);
 
         // -------------------------------------
         // =                (= var expr)
-        } else if (sym && streq(item[0]->val.sym, "=")) {
+        } else if (is_sym && streq(item[0]->val.sym, "=")) {
             if (elen != 3) {
                 errmsg("Syntax", "poorly formed assignment: (= var expr)", NULL, NULL);
                 lst_print(expr, 0);
@@ -216,7 +210,7 @@ safe_free(se);
         
         // -------------------------------------
         // null?            (null? expr)
-        } else if (sym && streq(item[0]->val.sym, "null?")) {
+        } else if (is_sym && streq(item[0]->val.sym, "null?")) {
             if (elen != 2) {
                 errmsg("Syntax", "poorly formed expression: (null? expr)", NULL, NULL);
                 lst_print(expr, 0);
@@ -226,15 +220,15 @@ safe_free(se);
             if (!v)
                 return NULL;
             if (v->type == NIL)
-                return num_new(1);
+                return num(1);
             else {
                 atom_del(v);
-                return num_new(0);
+                return num(0);
             }
         
         // -------------------------------------
         // func             (func (params) body)
-        } else if (sym && streq(item[0]->val.sym, "func")) {
+        } else if (is_sym && streq(item[0]->val.sym, "func")) {
             if (elen < 3 || item[1]->type != LIST) {
                 errmsg("Syntax", "poorly formed function definition: (func ([var ...]) body)", NULL, NULL);
                 lst_print(expr, 0);
@@ -249,15 +243,15 @@ safe_free(se);
                     return NULL;
                 }
             // Make a function body list
-            atom_t* body = lst_new();
-            lst_add(body, sym_new("block"));
+            atom_t* body = lst();
+            lst_add(body, sym("block"));
             for (i = 2; i < elen; ++i)
                 lst_add(body, item[i]);
-            return func_new(item[1], body, env);
+            return func(item[1], body, env);
 
         // -------------------------------------
         // block            (block expr [expr ...])
-        } else if (sym && streq(item[0]->val.sym, "block")) {
+        } else if (is_sym && streq(item[0]->val.sym, "block")) {
             atom_t* block_ret = NULL;
             atom_t* last_v = NULL;
             while (!block_ret && (*(++item))->type != LIST_EMPTY && (*item)->type != EOLIST) {
@@ -272,7 +266,7 @@ safe_free(se);
 
         // -------------------------------------
         // ret              (ret expr)
-        } else if (sym && streq(item[0]->val.sym, "ret")) {
+        } else if (is_sym && streq(item[0]->val.sym, "ret")) {
             // Evaluate item[1] and pass it to ret
             if (elen != 2) {
                 errmsg("Syntax", "poorly formed return statement: (ret expr)", NULL, NULL);
@@ -299,7 +293,7 @@ printf("....  eval:          Evaluating procedure and arguments\n");
                 return NULL;
 
             // Evaluate arguments
-            atom_t* args = lst_new();
+            atom_t* args = lst();
             atom_t* v;
             if (elen > 1) {
                 for (unsigned i = 1; i < elen; ++i)
@@ -381,7 +375,7 @@ printf("....  apply:         Creating function environment\n");
 #endif
 
         // Create function environment
-        edict_t* fenv = edict_new(argc, proc->val.closure->env);
+        edict_t* fenv = edict(argc, proc->val.closure->env);
         atom_t** par = proc->val.closure->params->val.lst;
         for (int i = 0; i < argc; ++i)
             edict_add(fenv, par[i]->val.sym, argv[i]);
@@ -431,7 +425,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     if (proc->optype == PRINT) {
         char* s;
         for (unsigned i = 0; i < argc; ++i) {
-            s = tostr(argv[i]);
+            if (argv[i]->type != SYMBOL || argv[i]->val.sym[0] != '"')
+                s = tostr(argv[i]);
+            else
+                s = strip_quotes(argv[i]->val.sym);
             printf("%s", s);
             safe_free(s);
         }
@@ -442,7 +439,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (proc->optype == PRINTLN) {
         char* s;
         for (unsigned i = 0; i < argc; ++i) {
-            s = tostr(argv[i]);
+            if (argv[i]->type != SYMBOL || argv[i]->val.sym[0] != '"')
+                s = tostr(argv[i]);
+            else
+                s = strip_quotes(argv[i]->val.sym);
             printf("%s", s);
             safe_free(s);
         }
@@ -468,10 +468,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         }
 
         if (proc->optype == MATH1) {
-            return num_new(proc->val.op_math1(*argv[0]->val.num));
+            return num(proc->val.op_math1(*argv[0]->val.num));
         } else {
             *argv[0]->val.num = proc->val.op_math1(*argv[0]->val.num);
-            return num_new(*argv[0]->val.num);
+            return num(*argv[0]->val.num);
         }
 
     // -------------------------------------
@@ -487,7 +487,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
             return NULL;
         }
 
-        return num_new(proc->val.op_math2(*argv[0]->val.num, *argv[1]->val.num));
+        return num(proc->val.op_math2(*argv[0]->val.num, *argv[1]->val.num));
 
     // -------------------------------------
     // math binary, with reduction
@@ -508,41 +508,211 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         
         // One argument: treat as (0, arg)
         if (argc == 1)
-            return num_new(proc->val.op_math2(0, *argv[0]->val.num));
+            return num(proc->val.op_math2(0, *argv[0]->val.num));
 
         // Multiple arguments: reduce
         double res = *argv[0]->val.num;
         for (int i = 1; i < argc; ++i)
             res = proc->val.op_math2(res, *argv[i]->val.num);
-        return num_new(res);
+        return num(res);
 
     // -------------------------------------
     // relation
     } else if (proc->optype == REL) {
-        if (argc == 0) {
-            errmsg("Syntax", "no arguments", NULL, NULL);
+        if (argc != 2 ) {
+            errmsg("Syntax", "wrong number of arguments", NULL, NULL);
             lst_print(expr, 0);
             return NULL;
-        } else if (argc > 2 ) {
-            errmsg("Syntax", "too many arguments", NULL, NULL);
+        } else if ((argv[0]->type != NUMBER || argv[1]->type != NUMBER) &&
+                   (argv[0]->type != SYMBOL || argv[1]->type != SYMBOL)) {
+            errmsg("Semantic", "wrong type of argument", NULL, NULL);
             lst_print(expr, 0);
             return NULL;
         }
 
-        int i;
-        for (i = 0; i < argc; ++i)
-            if (argv[i]->type != NUMBER) {
-                errmsg("Semantic", "wrong type of argument", NULL, NULL);
+        if (argv[0]->type == NUMBER)
+            return num(proc->val.op_rel(NUMBER, argv[0]->val.num, argv[1]->val.num));
+        else
+            return num(proc->val.op_rel(SYMBOL, argv[0]->val.sym, argv[1]->val.sym));
+
+    // -------------------------------------
+    // list             (list [elements...])
+    } else if (proc->optype == LIST_NEW) {
+        atom_t* v = lst();
+        // Assemble list
+        for (int i = 0; i < argc; ++i)
+            lst_add(v, argv[i]);
+        return v;
+
+    // -------------------------------------
+    // list_get         (list_get list index [index2])
+    } else if (proc->optype == LIST_GET) {
+        if (argc < 2 || argc > 3) {
+            errmsg("Syntax", "wrong number of arguments: (list_get list index [index2])",
+                NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        atom_t* list = argv[0];
+        int llen = lst_len(list);
+        // Return single element
+        if (argc == 2) {  
+            // Evaluate index
+            atom_t* index = argv[1];
+            if (index->type != NUMBER) {
+                errmsg("Semantic", "index is not a number", NULL, NULL);
                 lst_print(expr, 0);
                 return NULL;
             }
+            int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
+                (int)(*index->val.num);
+            if (idx < 0 || idx >= llen) {
+                errmsg("Semantic", "index is out of range", NULL, NULL);
+                lst_print(expr, 0);
+                return NULL;
+            }
+            return list->val.lst[idx];
+        }
+        // Return list, that is sublist in range [index, index2)
+        // Evaluate index
+        atom_t* index = argv[1];
+        if (index->type != NUMBER) {
+            errmsg("Semantic", "index is not a number", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int idx  = (int)*index->val.num  < 0 ? llen + (int)(*index->val.num) : 
+            (int)(*index->val.num);
+        // Evaluate index2
+        atom_t* index2 = argv[2];
+        if (index2->type != NUMBER) {
+            errmsg("Semantic", "index2 is not a number", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int idx2 = (int)*index2->val.num < 0 ? llen + (int)(*index2->val.num) :
+            (int)(*index2->val.num);
+        // Assemble new list
+        atom_t* v = lst();
+        for (int i = idx; i < idx2; ++i)
+            if (i >= 0 && i < llen)
+                lst_add(v, list->val.lst[i]);
+        return v;
 
-        // One argument: treat as (arg, 0)
-        if (argc == 1)
-            return num_new(proc->val.op_math2(*argv[0]->val.num, 0));
+    // -------------------------------------
+    // list_len         (list_len list)
+    } else if (proc->optype == LIST_LEN) {
+        if (argc != 1) {
+            errmsg("Syntax", "wrong number of arguments: (list_len list)", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        return num(lst_len(argv[0]));
 
-        // Two arguments
-        return num_new(proc->val.op_math2(*argv[0]->val.num, *argv[1]->val.num));
+    // -------------------------------------
+    // list_add         (list_add list element [...])
+    } else if (proc->optype == LIST_ADD) {
+        if (argc < 2) {
+            errmsg("Syntax", "too few arguments: (list_add list element [...])", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        for (int i = 1; i < argc; ++i)
+            lst_add(argv[0], argv[i]);
+        return argv[0];
+
+    // -------------------------------------
+    // list_ins         (list_ins list index element)
+    } else if (proc->optype == LIST_INS) {
+        if (argc != 3) {
+            errmsg("Syntax", "wrong number of arguments: (list_ins list index element)", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int llen = lst_len(argv[0]);
+        // Evaluate index
+        atom_t* index = argv[1];
+        if (index->type != NUMBER) {
+            errmsg("Semantic", "index is not a number", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
+            (int)(*index->val.num);
+        if (idx < 0)
+            idx = 0;
+        // Insert element to list
+        lst_ins(argv[0], idx, argv[2]);
+        return argv[0];
+
+    // -------------------------------------
+    // list_del         (list_del list index)
+    } else if (proc->optype == LIST_DEL) {
+        if (argc != 2) {
+            errmsg("Syntax", "wrong number of arguments: (list_del list index)", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int llen = lst_len(argv[0]);
+        // Evaluate index
+        atom_t* index = argv[1];
+        if (index->type != NUMBER) {
+            errmsg("Semantic", "index is not a number", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
+            (int)(*index->val.num);
+        if (idx < 0 || idx >= llen) {
+            errmsg("Semantic", "index is out of range", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        // Delete element from list
+        lst_del(argv[0], idx);
+        return argv[0];
+
+    // -------------------------------------
+    // list_merge       (list_merge list1 list2 [...])
+    } else if (proc->optype == LIST_MERGE) {
+        if (argc < 2) {
+            errmsg("Syntax", "too few arguments: (list_merge list1 list2 [...])", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int i, j;
+        for (i = 0; i < argc; ++i)
+            if (argv[i]->type != LIST) {
+                errmsg("Semantic", "not a list", NULL, NULL);
+                lst_print(expr, 0);
+                return NULL;
+            }
+        // Merge
+        atom_t* v = lst();
+        for (i = 0; i < argc; ++i)
+            for (j = 0; j < lst_len(argv[i]); ++j)
+                lst_add(v, argv[i]->val.lst[j]);
+        return v;
     }
 
     printf("\x1b[95m" "Fatal error: unknown operator!\n" "\x1b[0m");
