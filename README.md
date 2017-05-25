@@ -108,6 +108,7 @@ Form                             | Description
 -------------------------------- | ---------------------------------------
 `(list [items...])`              | create a list
 `(list_get list index [index2])` | return an item at `index` or sublist in range [`index`, `index2`)
+`(list_set list index item)`     | assign `item` to `list` at `index`
 `(list_len list)`                | length of `list`
 `(list_add list item [...])`     | append `item`(s) to `list`
 `(list_ins list index item)`     | insert `item` to `list` at `index`
