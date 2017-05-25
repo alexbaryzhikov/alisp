@@ -99,7 +99,7 @@ Name      | Description
 
 Name       | Description  
 ---------- | -----------
-`(type x)` | the type of x  
+`(type x)` | return the type of x  
 `(copy x)` | make a deep copy of x  
 
 **List** operators.
