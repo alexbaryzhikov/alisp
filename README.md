@@ -112,7 +112,7 @@ Form                             | Description
 `(list_len list)`                | length of `list`
 `(list_add list item [...])`     | append `item`(s) to `list`
 `(list_ins list index item)`     | insert `item` to `list` at `index`
-`(list_rem list index)`          | remove item in `list` at `index`
+`(list_rem list index)`          | remove item from `list` at `index`
 `(list_merge lis1 list2 [...])`  | merge lists, do not mutate originals
 
 **Relational** operators have form `(op arg1 arg2)`.
