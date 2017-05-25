@@ -327,10 +327,10 @@ safe_free(dbg_s2);
             active_env = env;
 
 #ifdef DEBUG
-dbg_s = atom_tostr(v);
+dbg_s = v ? atom_tostr(v) : "NULL";
 printf("....  eval:                    %s <-- apply\n", dbg_s);
 printf("....  eval:                    Deallocating procedure and arguments\n");
-safe_free(dbg_s);
+if (v) safe_free(dbg_s);
 #endif
 
             if (v)

@@ -160,7 +160,17 @@ atom_t* op_list_get() {
     return obj;
 }
 
-// TODO: op_list_set -- reassign list element at given index
+/* Assign a value to list element. */
+atom_t* op_list_set() {
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_SET;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
+}
 
 /* Return list length. */
 atom_t* op_list_len() {

@@ -92,6 +92,7 @@ printf("....  globenv_init:            Creating global environment\n");
     /* Lists */
     dict_add(global_env, "list",       op_list());
     dict_add(global_env, "list_get",   op_list_get());
+    dict_add(global_env, "list_set",   op_list_set());
     dict_add(global_env, "list_len",   op_list_len());
     dict_add(global_env, "list_add",   op_list_add());
     dict_add(global_env, "list_ins",   op_list_ins());

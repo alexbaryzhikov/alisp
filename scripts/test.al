@@ -122,6 +122,11 @@
     (println "OK -- Lists merged: " tmp)
     (println "FAIL -- Lists merged: " tmp))
 
+(list_set lst 2 33)
+(if (== (list_get lst 2) 33)
+    (println "OK -- List item after assignment: " (list_get lst 2))
+    (println "FAIL -- List item after assignment: " (list_get lst 2)))
+
 
 # -----------------------------------------------------------------------------
 # Recursion

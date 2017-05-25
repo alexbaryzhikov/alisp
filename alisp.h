@@ -11,7 +11,7 @@ enum { NIL, NUMBER, SYMBOL, LIST, DICTIONARY, FUNCTION, STD_OP };
 
 /* Standard operator types */
 enum { PRINT, PRINTLN, MATH1, MATH1_M, MATH2, MATH2_R, REL, COPY, TYPE,
-       LIST_NEW, LIST_GET, LIST_LEN, LIST_ADD, LIST_INS, LIST_REM, LIST_MERGE };
+       LIST_NEW, LIST_GET, LIST_SET, LIST_LEN, LIST_ADD, LIST_INS, LIST_REM, LIST_MERGE };
 
 typedef struct Atom atom_t;
 
@@ -216,6 +216,7 @@ atom_t* op_copy();
 atom_t* op_type();
 atom_t* op_list();
 atom_t* op_list_get();
+atom_t* op_list_set();
 atom_t* op_list_len();
 atom_t* op_list_add();
 atom_t* op_list_ins();

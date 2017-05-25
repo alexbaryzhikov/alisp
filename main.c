@@ -171,14 +171,11 @@ printf("....  repl:                    Deallocating parse tree\n");
 #endif
 
     atom_unbind(parse_tree, global_env);
-    if (val != parse_tree) {
+    if (val == parse_tree)
+        val = NULL;
+    else if (val)
         atom_del(val);
-        atom_del(parse_tree);
-    } else {
-        atom_del(val);
-        parse_tree = NULL;
-    }
-
+    atom_del(parse_tree);
     safe_free(input);
 }
 

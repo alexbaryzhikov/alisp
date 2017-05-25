@@ -287,6 +287,37 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         return v;
 
     // -------------------------------------
+    // list_set         (list_set list index item)
+    } else if (optype == LIST_SET) {
+        if (argc != 3) {
+            errmsg("Syntax", "wrong number of arguments: (list_set list index item)", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        } else if (argv[0]->type != LIST) {
+            errmsg("Semantic", "not a list", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        atom_t* list = argv[0];
+        atom_t* index = argv[1];
+        atom_t* item = argv[2];
+        if (index->type != NUMBER) {
+            errmsg("Semantic", "index is not a number", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        int idx = (int)*index->val.num < 0 ? lst_len(list) + (int)(*index->val.num) : 
+            (int)(*index->val.num);
+        if (idx < 0 || idx >= lst_len(list)) {
+            errmsg("Semantic", "index is out of range", NULL, NULL);
+            lst_print(expr, 0);
+            return NULL;
+        }
+        lst_rem(list, idx);
+        lst_ins(list, idx, item);
+        return item;
+
+    // -------------------------------------
     // list_len         (list_len list)
     } else if (optype == LIST_LEN) {
         if (argc != 1) {
