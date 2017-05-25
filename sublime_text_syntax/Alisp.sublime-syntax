@@ -9,7 +9,7 @@ contexts:
     - match: (#.*)
       scope: comment
 
-    - match: \b(def|list|cond|if|func|block|ret)\b
+    - match: \b(def|cond|if|func|block|ret)\b
       scope: keyword
 
     - match: (==|!=|<=|>=|<<|>>)
@@ -18,7 +18,10 @@ contexts:
     - match: (=|null\?)
       scope: keyword
 
-    - match: \b(print|println|inc|dec|and|or|not)\b
+    - match: \b(print|println|inc|dec|and|or|not|type|copy)\b
+      scope: keyword.operator
+
+    - match: \b(list|list_get|list_set|list_len|list_add|list_ins|list_del|list_merge)\b
       scope: keyword.operator
 
     - match: \b(acos|asin|atan|atan2|cos|cosh|sin|sinh|tanh)\b
