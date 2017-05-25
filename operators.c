@@ -235,6 +235,8 @@ atom_t* op_list_merge() {
 
 // ---------------------------------------------------------------------- 
 // TODO: dictionary
+// TODO: "for" loop -- iterable/generator based
+// TODO: "while" loop -- condition based
 
 
 // ---------------------------------------------------------------------- 
