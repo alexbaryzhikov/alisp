@@ -1,14 +1,14 @@
-# Create closure
+# Export function with several hidden environments
+(def bar (func()
+    (def a 0)
+    (def deep (func()
+        (func()
+            (inc a))))
+    (deep)))
 
-(def make_counter (func ()
-    (def c 0)
-    (func () (inc c))))
+(def dcl (bar))
 
-(def x (make_counter))
-
-(print (x) " ")
-(print (x) " ")
-(print (x) " ")
-(print (x) " ")
-(println (x))
+(if (and (== (dcl) 1) (== (dcl) 2) (== (dcl) 3))
+    (println "OK -- Deep closure")
+    (println "FAIL -- Deep closure"))
 

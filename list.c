@@ -7,9 +7,6 @@ List: a collection of objects.
 #include <string.h>
 #include <alisp.h>
 
-atom_t list_emptyobj = {{}, LIST_EMPTY, 0, 1};
-atom_t eolistobj = {{}, EOLIST, 0, 1};
-
 /*
 --------------------------------------
 lst
@@ -18,62 +15,163 @@ lst
 --------------------------------------
 */
 atom_t* lst() {
-    atom_t* list = (atom_t*)malloc(sizeof(atom_t));
-    list->val.lst = (atom_t**)malloc(4 * sizeof(atom_t*));
-    unsigned i;
-    for (i = 0; i < 3; ++i)
-        list->val.lst[i] = &list_emptyobj;  // fill list with LIST_EMPTY objects
-    list->val.lst[i] = &eolistobj;          // terminate list with EOLIST object
-    list->type = LIST;
-    list->bindings = 0;
-    return list;
-}
 
-/*
---------------------------------------
-lst_ins
+    // Make a list
+    list_t* l = malloc(sizeof(list_t));
+    l->bindlist = NULL;
+    l->lock = 0;
+    l->len = 0;
+    l->maxlen = 2;
+    l->items = malloc(l->maxlen * sizeof(atom_t*));
 
-    Insert item to list at given index.
---------------------------------------
-*/
-void lst_ins(atom_t* list, int index, atom_t* item) {
-    lst_assert(list);
-    if (!item) {
-        printf("\x1b[95m" "Fatal error: lst_ins: NULL item!\n" "\x1b[0m");
-        exit(EXIT_FAILURE);
-    }
-    unsigned sz = lst_len(list);
-    if (sz == lst_maxlen(list)) 
-        lst_expand(list);
-    if (index >= sz || index < 0)
-        // insert item at the end of the list
-        index = sz;
-    else
-        // shift items to free space
-        memmove(list->val.lst + index + 1, list->val.lst + index, (sz - index + 1) * sizeof(atom_t*));
-    list->val.lst[index] = item;
-    ++item->bindings;
+    // Make a list object
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.list = l;
+    obj->type = LIST;
+    obj->bindings = 0;
+    return obj;
 }
 
 /*
 --------------------------------------
 lst_del
+    
+    Deallocate a list.
+--------------------------------------
+*/
+void lst_del(atom_t* obj) {
+    lst_assert(obj, "lst_del");
+
+#ifdef DEBUG
+char* dbg_s = atom_tostr(obj);
+printf("....  lst_del:                 Deallocating %s\n", dbg_s);
+safe_free(dbg_s);
+#endif
+
+    int i;
+    list_t* l = obj->val.list;
+    atom_t* item;
+    l->lock = 1;  // lock this object
+
+    // Deallocate bound objects
+    for (i = 0; i < l->len; ++i) {
+        item = l->items[i];
+        if (!(atom_is_container(item) && item->val.list->lock)) {
+            atom_unbind(item, obj);
+            atom_del(item);  // free item object
+        }
+    }
+
+    // Deallocate the rest
+    safe_free(l->items);  // free items
+    lst_free(l->bindlist);
+    safe_free(l);         // free list
+    safe_free(obj);       // free object
+}
+
+/*
+--------------------------------------
+lst_cp
+
+    Copy a list (subroutine for atom_cp).
+--------------------------------------
+*/
+atom_t* lst_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
+    int i = lst_idx(objects, obj);
+    if (i != -1)
+        return copies->val.list->items[i];  // object already has a copy
+
+    atom_t* copy = lst();
+    lst_add_nobind(objects, obj);
+    lst_add_nobind(copies, copy);
+
+    atom_t** items = obj->val.list->items;
+    for (i = 0; i < lst_len(obj); ++i)
+        lst_add(copy, atom_cp(items[i], objects, copies));
+    return copy;
+}
+
+/*
+--------------------------------------
+lst_insert
 
     Insert item to list at given index.
 --------------------------------------
 */
-void lst_del(atom_t* list, int index) {
-    lst_assert(list);
-    unsigned sz = lst_len(list);
-    if (index >= sz || index < 0) {
-        printf("\x1b[95m" "Fatal error: lst_del: index is out of range!\n" "\x1b[0m");
+void lst_insert(atom_t* list, int index, atom_t* item, char bind) {
+    lst_assert(list, "lst_ins");
+    if (!item) {
+        printf("\x1b[95m" "Fatal error: lst_ins: bad item!\n" "\x1b[0m");
         exit(EXIT_FAILURE);
     }
-    atom_t* item = list->val.lst[index];
-    --item->bindings;
-    atom_del(item);
-    memmove(list->val.lst + index, list->val.lst + index + 1, (sz - index - 1) * sizeof(atom_t*));
-    list->val.lst[sz-1] = &list_emptyobj;
+
+    list_t* l = list->val.list;
+
+    // Allocate more space if necessary
+    if (l->len == l->maxlen) {
+        l->maxlen *= 1.5;
+        l->items = realloc(l->items, l->maxlen * sizeof(atom_t*));
+    }
+
+    if (index > l->len || index < 0)
+        // insert item at the end of the list
+        index = l->len;
+    else
+        // shift items to free space
+        memmove(l->items + index + 1, l->items + index, (l->len - index) * sizeof(atom_t*));
+
+    // Insert item
+    l->items[index] = item;
+    ++l->len;
+    if (bind)
+        atom_bind(item, list);
+}
+
+/*
+--------------------------------------
+lst_idx
+
+    Return an index of an item in list, or -1.
+--------------------------------------
+*/
+int lst_idx(atom_t* list, atom_t* item) {
+    lst_assert(list, "lst_idx");
+    if (!item) {
+        printf("\x1b[95m" "Fatal error: lst_idx: bad item!\n" "\x1b[0m");
+        exit(EXIT_FAILURE);
+    }
+    int i;
+    for (i = 0; i < lst_len(list); ++i)
+        if (list->val.list->items[i] == item)
+            break;
+    if (i == lst_len(list))
+        i = -1;
+    return i;
+}
+
+/*
+--------------------------------------
+lst_remove
+
+    Remove item at index from the list.
+--------------------------------------
+*/
+void lst_remove(atom_t* list, int index, char unbind) {
+    lst_assert(list, "lst_rem");
+    if (index >= lst_len(list) || index < 0) {
+        printf("\x1b[95m" "Fatal error: lst_rem: index is out of range!\n" "\x1b[0m");
+        exit(EXIT_FAILURE);
+    }
+
+    list_t* l = list->val.list;
+
+    if (unbind) {
+        atom_unbind(l->items[index], list);
+        atom_del(l->items[index]);
+    }
+
+    memmove(l->items + index, l->items + index + 1, (l->len - index - 1) * sizeof(atom_t*));
+    --l->len;
 }
 
 /*
@@ -86,40 +184,41 @@ lst_tostr
 char* lst_tostr(atom_t* list, int depth) {
     char buf[1024];
     char* o;
-    atom_t** item;
+    char ellipsis = 0;
+    atom_t** items = list->val.list->items;
     strcpy(buf, "(");
-    for (item = list->val.lst; (*item)->type != LIST_EMPTY && (*item)->type != EOLIST; ++item) {
-        if ((*item)->type == LIST) {
-            if (strlen(buf) + 10 > 1024) {
-                strcat(buf, " ... ");
-                break;
-            } else if (depth) {
-                o = lst_tostr(*item, depth - 1);
-                if (strlen(buf) + strlen(o) + 10 > 1024) {
-                    strcat(buf, " ... ");
-                    safe_free(o);
-                    break;
-                } else {
+
+    for (int i = 0; i < lst_len(list); ++i) {
+
+        if (ellipsis || strlen(buf) > 1000) {
+            strcat(buf, " ... ");
+            break;
+
+        } else if (items[i]->type == LIST) {
+            if (depth) {
+                o = lst_tostr(items[i], depth - 1);
+                if (strlen(buf) + strlen(o) > 1000)
+                    ellipsis = 1;
+                else
                     strcat(buf, o);
-                    safe_free(o);
-                }
+                safe_free(o);
             } else {
                 strcat(buf, "(...)");
             }
+
         } else {
-            o = tostr(*item);
-            if (strlen(buf) + strlen(o) + 10 > 1024) {
-                strcat(buf, " ... ");
-                safe_free(o);
-                break;
-            } else {
+            o = atom_tostr(items[i]);
+            if (strlen(buf) + strlen(o) > 1000)
+                ellipsis = 1;
+            else
                 strcat(buf, o);
-                safe_free(o);
-            }
+            safe_free(o);
         }
-        if (item[1]->type != LIST_EMPTY && item[1]->type != EOLIST)
+
+        if (i < lst_len(list) - 1)
             strcat(buf, " ");
     }
+
     strcat(buf, ")");
     o = malloc(strlen(buf) + 1);
     strcpy(o, buf);
@@ -130,98 +229,70 @@ char* lst_tostr(atom_t* list, int depth) {
 --------------------------------------
 lst_print
 
-    Print list macro.
+    Print a list.
 --------------------------------------
 */
-void lst_print(atom_t* list, int recur) {
-    lst_assert(list);
-#ifndef LIST_PRINT_EXPANDED
-    lst_pr_lin(list, recur);
+void lst_print(atom_t* list, int depth) {
+    lst_assert(list, "lst_print");
+    lst_pr(list, depth);
     putchar('\n');
-#else
-    lst_pr_exp(list, 0, recur);
-#endif
 }
 
-/* Assert that object is of LIST type. */
-void lst_assert(atom_t* list) {
-    if (list == NULL || list->type != LIST) {
-        printf("\x1b[95m" "Fatal error: list assertion failed!\n" "\x1b[0m");
-        exit(EXIT_FAILURE);
-    }
-}
-
-/* Return list length. */
-unsigned lst_len(atom_t* list) {
-    lst_assert(list);
-    unsigned i;
-    for (i = 0; list->val.lst[i]->type != LIST_EMPTY && list->val.lst[i]->type != EOLIST; ++i);
-    return i;
-}
-
-/* Return list maximum lenght. */
-unsigned lst_maxlen(atom_t* list) {
-    lst_assert(list);
-    unsigned i;
-    for (i = 0; list->val.lst[i]->type != EOLIST; ++i);
-    return i;
-}
-
-/* Double the max length of the list. */
-void lst_expand(atom_t* list) {
-    lst_assert(list);
-    unsigned i, mlen;
-    i = lst_maxlen(list);
-    mlen = (i + 1) << 1;
-    list->val.lst = (atom_t**)realloc(list->val.lst, mlen * sizeof(atom_t*));
-    for (; i < mlen - 1; ++i)
-        list->val.lst[i] = &list_emptyobj;  // fill new chunk with LIST_EMPTY objects
-    list->val.lst[i] = &eolistobj;          // terminate list with EOLIST object
-}
-
-/* Print list as a continuous string. */
-void lst_pr_lin(atom_t* list, int recur) {
-    atom_t** item;
+/* Print list recursively. */
+void lst_pr(atom_t* list, int depth) {
+    atom_t** items = list->val.list->items;
     char* o;
     printf("(");
-    for (item = list->val.lst; (*item)->type != LIST_EMPTY && (*item)->type != EOLIST; ++item) {
-        if ((*item)->type == LIST) {
-            if (recur)
-                lst_pr_lin(*item, recur);
+    for (int i = 0; i < lst_len(list); ++i) {
+        if (items[i]->type == LIST) {
+            if (depth)
+                lst_pr(items[i], depth - 1);
             else
                 printf("(...)");
         } else {
-            o = tostr(*item);
+            o = atom_tostr(items[i]);
             printf("%s", o);
             safe_free(o);
         }
-        if (item[1]->type != LIST_EMPTY && item[1]->type != EOLIST)
+        if (i < lst_len(list) - 1)
             putchar(' ');
     }
     printf(")");
 }
 
-/* Print list expanded. */
-void lst_pr_exp(atom_t* list, int ind, int recur) {
-    if (!lst_len(list)) {
-        printf("%*c()\n", ind + 1, '\0');
-        return;
+
+// ---------------------------------------------------------------------- 
+// Auxiliary
+
+/* Assert that object exists and is of LIST type. */
+void lst_assert(atom_t* obj, const char* fname) {
+    if (!(obj && obj->type == LIST)) {
+        printf("\x1b[95m" "Fatal error: %s: not a list!\n" "\x1b[0m", fname);
+        exit(EXIT_FAILURE);
     }
-    atom_t** item;
-    char* o;
-    printf("%*c(\n", ind + 1, '\0');
-    for (item = list->val.lst; (*item)->type != LIST_EMPTY && (*item)->type != EOLIST; ++item) {
-        if ((*item)->type == LIST) {
-            if (recur)
-                lst_pr_exp(*item, ind + 2, recur);
-            else
-                printf("%*c(...)\n", ind + 3, '\0');
-        } else {
-            o = tostr(*item);
-            printf("%*c%s\n", ind + 3, '\0', o);
-            safe_free(o);
-        }
-    }
-    printf("%*c)\n", ind + 1, '\0');
 }
 
+/* Return list length. */
+int lst_len(atom_t* list) {
+    return list->val.list->len;
+}
+
+/* Return list maximum lenght. */
+int lst_maxlen(atom_t* list) {
+    return list->val.list->maxlen;
+}
+
+/*
+--------------------------------------
+lst_free
+
+    Deallocate list object, ignore items.
+--------------------------------------
+*/
+void lst_free(atom_t* obj) {
+    if (obj) {
+        safe_free(obj->val.list->items);  // free items
+        safe_free(obj->val.list);         // free list
+        safe_free(obj);                   // free object
+    }
+}

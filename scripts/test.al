@@ -41,6 +41,19 @@
     (println "OK -- Variable defined in the branch block: y = " y)
     (println "FAIL -- Variable defined in the branch block: y = " y))
 
+# type
+(if (== (type x) "NUMBER")
+    (println "OK -- Type of x: " (type x))
+    (println "FAIL -- Type of x: " (type x)))
+
+# copy
+(= y (copy x))
+(inc x)
+
+(if (!= x y)
+    (println "OK -- Copy: x = " x ", y = " y)
+    (println "FAIL -- Copy: x = " x ", y = " y))
+
 # branching-2
 (def a 1)
 (cond 
@@ -101,7 +114,7 @@
     (println "OK -- List length: " tmp)
     (println "FAIL -- List length: " tmp))
 
-(if (== (list_len (list_del lst 4)) 5)
+(if (== (list_len (list_rem lst 4)) 5)
     (println "OK -- List element deleted: " lst)
     (println "FAIL -- List element deleted: " lst))
 
@@ -185,3 +198,17 @@
     (println "OK -- Deep closure")
     (println "FAIL -- Deep closure"))
 
+# The inner function is created within foo evironment,
+# but is not bound in it. It is exported via list. It
+# should be detected for ghosting of foo environment.
+(def hid (func()
+    (def x 0)
+    (list (func () 
+        (inc x)))))
+
+(def hf (hid))
+# Now 'a' is a list with anonimous function in it.
+# Let's call it.
+(if (== ((list_get hf 0)) 1)
+    (println "OK -- Hidden function export")
+    (println "FAIL -- Hidden function export"))

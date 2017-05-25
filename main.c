@@ -82,7 +82,7 @@ void script(const char* filename) {
     }
 
 #ifdef DEBUG
-printf("....  script:        Building parse tree\n");
+printf("....  script:                  Building parse tree\n");
 #endif
 
     // Parse
@@ -92,22 +92,21 @@ printf("....  script:        Building parse tree\n");
         safe_free(input);
         return;
     }
-
-    // Evaluate
-    atom_t* val = eval(parse_tree, global_env, NULL);
+    atom_bind(parse_tree, global_env);
 
 #ifdef DEBUG
-printf("....  script:        Deallocating parse tree\n");
+printf("....  script:                  Evaluating parse tree\n");
 #endif
 
-    if (val != parse_tree) {
-        atom_del(val);
-        atom_del(parse_tree);
-    } else {
-        atom_del(val);
-        parse_tree = NULL;
-    }
+    // Evaluate
+    eval(parse_tree, global_env, NULL);
 
+#ifdef DEBUG
+printf("....  script:                  Deallocating parse tree\n");
+#endif
+
+    atom_unbind(parse_tree, global_env);
+    atom_del(parse_tree);
     safe_free(input);
 }
 
@@ -120,14 +119,14 @@ repl
 */
 void repl() {
     // Read input
-    input = (char*)malloc(32);
+    input = malloc(32);
     unsigned imax = 32;
     unsigned i;
     printf("~ ");
 
     for(i = 0; (input[i] = getchar()) != EOF && input[i] != '\n'; ++i)
         if (i == imax - 2)
-            input = (char*)realloc(input, imax *= 2);
+            input = realloc(input, imax *= 2);
     input[i] = '\0';
 
     if (strlen(input) == 0) {
@@ -144,7 +143,7 @@ void repl() {
     }
 
 #ifdef DEBUG
-printf("....  repl:          Building parse tree\n");
+printf("....  repl:                    Building parse tree\n");
 #endif
 
     // Parse
@@ -153,19 +152,25 @@ printf("....  repl:          Building parse tree\n");
         safe_free(input);
         return;
     }
+    atom_bind(parse_tree, global_env);
+
+#ifdef DEBUG
+printf("....  repl:                    Evaluating parse tree\n");
+#endif
 
     // Evaluate
     atom_t* val = eval(parse_tree, global_env, NULL);
     if (val && val->type != NIL) {
-        char* o = tostr(val);
+        char* o = atom_tostr(val);
         printf("%s\n", o);
         safe_free(o);
     }
 
 #ifdef DEBUG
-printf("....  repl:          Deallocating parse tree\n");
+printf("....  repl:                    Deallocating parse tree\n");
 #endif
 
+    atom_unbind(parse_tree, global_env);
     if (val != parse_tree) {
         atom_del(val);
         atom_del(parse_tree);
@@ -192,15 +197,15 @@ void magic() {
                "  $run              Run script file.\n"
                "  $about            Info about the program.\n");
 
-    } else if (streq(input+1, "env")) {
-        edict_print(global_env);
+    } else if (streq(input + 1, "env")) {
+        dict_print(global_env);
 
-    } else if (streq(input+1, "exit")) {
+    } else if (streq(input + 1, "exit")) {
         safe_free(input);
         globenv_del();
         exit(EXIT_SUCCESS);
 
-    } else if (!strncmp(input+1, "run ", 4)) {
+    } else if (!strncmp(input + 1, "run ", 4)) {
         if (strlen(input) > 5)
             script(input + 5);
 

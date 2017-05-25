@@ -3,7 +3,7 @@ CFLAGS = -Wall -I.
 LIBS = -lm
 DEPS = alisp.h
 ODIR = obj
-OFILES = main.o eval.o parser.o types.o list.o edict.o globenv.o operators.o utils.o
+OFILES = main.o parser.o eval.o apply.o atom.o list.o dict.o globenv.o operators.o utils.o
 OBJ = $(patsubst %,$(ODIR)/%,$(OFILES))
 
 alisp: $(OBJ)

@@ -26,16 +26,6 @@ void helpmsg() {
            "    alisp script -i         Run script from file and stay in REPL.\n");
 }
 
-/* Display status message. */
-void statusmsg(int status, char* msg) {
-#ifdef REPORT_STATUS
-    if (status)
-        printf("[  " "\x1b[92m" "OK" "\x1b[0m" "  ] %s\n", msg);
-    else
-        printf("[ " "\x1b[91m" "FAIL" "\x1b[0m" " ] %s\n", msg);
-#endif
-}
-
 /* Display error message.
 type - error type, msg - error text, p - error position, s - context string. */
 void errmsg(const char* type, const char* msg, const char* p, const char* s) {
@@ -84,7 +74,7 @@ void safe_memory_free(void** p_addr) {
 // Strings
 
 /* Return symbolic string with quotes stripped. */
-char* strip_quotes(char* a) {
+char* strip_quotes(const char* a) {
     size_t alen = strlen(a);
     char* buf = malloc(alen - 1);
     strncpy(buf, a + 1, alen - 2);
@@ -92,8 +82,17 @@ char* strip_quotes(char* a) {
     return buf;
 }
 
+/* Return symbolic string with quotes stripped. */
+char* add_quotes(const char* a) {
+    size_t alen = strlen(a);
+    char* buf = malloc(alen + 3);
+    strcpy(buf + 1, a);
+    buf[0] = buf[alen + 1] = '"';
+    buf[alen + 2] = '\0';
+    return buf;
+}
+
 /* Return true if strings are equal, false otherwise. */
 int streq(const char* s1, const char* s2) {
     return !strcmp(s1, s2);
 }
-

@@ -7,139 +7,224 @@ Operators.
 #include <math.h>
 #include <alisp.h>
 
+
 // ---------------------------------------------------------------------- 
-// Operator object constructors
+// Output
 
 /* Print. */
 atom_t* op_print() {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = PRINT;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = PRINT;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Print line. */
 atom_t* op_println() {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = PRINTLN;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = PRINTLN;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
+
+
+// ---------------------------------------------------------------------- 
+// Math and relation
 
 /* Math unary. */
 atom_t* op_math1(double (*op)(double)) {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->val.op_math1 = op;
-    a->type = STD_OP;
-    a->optype = MATH1;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->val.math1 = op;
+    o->type = MATH1;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Math unary, mutates argument. */
 atom_t* op_math1m(double (*op)(double)) {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->val.op_math1 = op;
-    a->type = STD_OP;
-    a->optype = MATH1_M;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->val.math1 = op;
+    o->type = MATH1_M;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Math binary. */
 atom_t* op_math2(double (*op)(double, double)) {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->val.op_math2 = op;
-    a->type = STD_OP;
-    a->optype = MATH2;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->val.math2 = op;
+    o->type = MATH2;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Math binary, reduces operator over arguments. */
 atom_t* op_math2r(double (*op)(double, double)) {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->val.op_math2 = op;
-    a->type = STD_OP;
-    a->optype = MATH2_R;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->val.math2 = op;
+    o->type = MATH2_R;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Relation. */
-atom_t* op_rel(double (*op)(int, void*, void*)) {
-    atom_t* a = (atom_t*)malloc(sizeof(atom_t));
-    a->val.op_rel = op;
-    a->type = STD_OP;
-    a->optype = REL;
-    a->bindings = 0;
-    return a;
+atom_t* op_rel(double (*op)(char, void*, void*)) {
+    operator_t* o = malloc(sizeof(operator_t));
+    o->val.rel = op;
+    o->type = REL;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
+
+
+// ---------------------------------------------------------------------- 
+// Utility
+
+/* Return a copy of an object. */
+atom_t* op_copy() {
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = COPY;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
+}
+
+/* Return type of an object. */
+atom_t* op_type() {
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = TYPE;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
+}
+
+
+// ---------------------------------------------------------------------- 
+// List
 
 /* Create list. */
 atom_t* op_list() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_NEW;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_NEW;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Get list element/sublist. */
 atom_t* op_list_get() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_GET;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_GET;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
+
+// TODO: op_list_set -- reassign list element at given index
 
 /* Return list length. */
 atom_t* op_list_len() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_LEN;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_LEN;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Add element to list. */
 atom_t* op_list_add() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_ADD;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_ADD;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Insert element to list. */
 atom_t* op_list_ins() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_INS;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_INS;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Delete element from list. */
-atom_t* op_list_del() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_DEL;
-    a->bindings = 0;
-    return a;
+atom_t* op_list_rem() {
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_REM;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
 
 /* Merge lists. */
 atom_t* op_list_merge() {
-    atom_t* a = malloc(sizeof(atom_t));
-    a->type = STD_OP;
-    a->optype = LIST_MERGE;
-    a->bindings = 0;
-    return a;
+    operator_t* o = malloc(sizeof(operator_t));
+    o->type = LIST_MERGE;
+
+    atom_t* obj = malloc(sizeof(atom_t));
+    obj->val.oper = o;
+    obj->type = STD_OP;
+    obj->bindings = 0;
+    return obj;
 }
+
+
+// ---------------------------------------------------------------------- 
+// TODO: dictionary
 
 
 // ---------------------------------------------------------------------- 
@@ -154,22 +239,22 @@ double op_inc(double a)           { return a + 1.0; }
 double op_dec(double a)           { return a - 1.0; }
 
 /* Relational */
-double op_eq(int type, void* a, void* b) {
+double op_eq(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a == *(double*)b : strcmp((char*)a, (char*)b) == 0; }
 
-double op_ne(int type, void* a, void* b) {
+double op_ne(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a != *(double*)b : strcmp((char*)a, (char*)b) != 0; }
 
-double op_lt(int type, void* a, void* b) {
+double op_lt(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a  < *(double*)b : strcmp((char*)a, (char*)b)  < 0; }
 
-double op_gt(int type, void* a, void* b) {
+double op_gt(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a  > *(double*)b : strcmp((char*)a, (char*)b)  > 0; }
 
-double op_le(int type, void* a, void* b) {
+double op_le(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a <= *(double*)b : strcmp((char*)a, (char*)b) <= 0; }
 
-double op_ge(int type, void* a, void* b) {
+double op_ge(char type, void* a, void* b) {
     return type == NUMBER ? *(double*)a >= *(double*)b : strcmp((char*)a, (char*)b) >= 0; }
 
 /* Logical */

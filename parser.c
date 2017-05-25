@@ -29,6 +29,10 @@ atom_t* parse() {
     if (!tokens)                    // error during tokenizing
         return NULL;
 
+#ifdef DEBUG
+printf("....  parse:                   %d tokens found\n", tok_len());
+#endif
+
     token_t** tok_end = tokens + tok_len();
     atom_t* item = read_from_tokens();
 
@@ -41,15 +45,14 @@ atom_t* parse() {
         return item;
 
     } else {                        // multiple items
-        atom_t* ptree;
-        ptree = lst();
+        atom_t* ptree = lst();
         lst_add(ptree, sym("block"));
         lst_add(ptree, item);
 
         while (tok != tok_end) {
-            if ((item = read_from_tokens()))
+            if ((item = read_from_tokens())) {
                 lst_add(ptree, item);
-            else {
+            } else {
                 atom_del(ptree);
                 tokens_del();
                 return NULL;
@@ -66,11 +69,13 @@ atom_t* read_from_tokens() {
         errmsg("Syntax", "unexpected EOF while reading", NULL, NULL);
         return NULL;
     }
+
     token_t* token = *tok++;
-    if (!strcmp(token->val, "(")) {
+
+    if (streq(token->val, "(")) {
         atom_t* list = lst();
         atom_t* a;
-        while (strcmp((*tok)->val, ")")) {
+        while (!streq((*tok)->val, ")")) {
             if ((a = read_from_tokens()))
                 lst_add(list, a);
             else
@@ -78,9 +83,11 @@ atom_t* read_from_tokens() {
         }
         ++tok;  // pop ')'
         return list;
-    } else if (!strcmp(token->val, ")")) {
+
+    } else if (streq(token->val, ")")) {
         errmsg("Syntax", "unexpected ')'", token->pos, input);
         return NULL;
+
     } else {
         return make_atom(token);
     }
@@ -89,18 +96,18 @@ atom_t* read_from_tokens() {
 /* Convert a token into an atomic object. */
 atom_t* make_atom(token_t* token) {
     if (!strlen(token->val)) {
-        errmsg("Syntax", "zero-length token", token->pos, input);
-        return NULL;
+        printf("\x1b[95m" "Fatal error: make_atom: zero-length token!\n" "\x1b[0m");
+        exit(EXIT_FAILURE);
     }
     char* t;
     double x = strtod(token->val, &t);
     if (*t == '\0') {
-        return num(x);      // number
+        return num(x);           // number
     } else if (x) {
         errmsg("Syntax", "invalid symbol", token->pos, input);
         return NULL;
     } else {
-        return sym(token->val);   // symbol
+        return sym(token->val);  // symbol
     }
 }
 
