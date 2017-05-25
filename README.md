@@ -88,12 +88,19 @@ Name      | Description
 
 ## Operators
 
-**Output** operators.
+**Output** operators.  
 
 Name      | Description
 --------- | -----------
 `print`   | print arguments to stdout: `(print expr1 expr2 ...)`. Arguments may be quoted strings `"this is string"`.  
 `println` | same as `print` but with newline at the end.  
+
+**Object** operators.  
+
+Name       | Description  
+---------- | -----------
+`(type x)` | the type of x  
+`(copy x)` | make a deep copy of x  
 
 **List** operators.
 
