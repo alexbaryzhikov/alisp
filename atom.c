@@ -68,6 +68,9 @@ atom_t* func(atom_t* params, atom_t* body, atom_t* env) {
     obj->type = FUNCTION;
     obj->bindings = 0;
 
+    // Bind object to environment
+    atom_bind(obj, env);
+
     // Bind members
     atom_bind(function->params, obj);
     atom_bind(function->body, obj);

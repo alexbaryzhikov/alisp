@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     } else if (argc == 2 && argv[1][0] != '-') {
         script(argv[1]);
 
-    } else if (argc == 2 && argv[1][0] != '-' && streq(argv[2], "-i")) {
+    } else if (argc == 3 && argv[1][0] != '-' && streq(argv[2], "-i")) {
         script(argv[1]);
         while (1)
             repl();
