@@ -5,16 +5,16 @@ List: a collection of objects.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 /*
 --------------------------------------
-lst
+list
     
     Make a list.
 --------------------------------------
 */
-atom_t* lst() {
+atom_t* list() {
 
     // Make a list
     list_t* l = malloc(sizeof(list_t));
@@ -29,32 +29,32 @@ atom_t* lst() {
     obj->val.list = l;
     obj->type = LIST;
     obj->bindings = 0;
+
     return obj;
 }
 
 /*
 --------------------------------------
-lst_del
+list_del
     
     Deallocate a list.
 --------------------------------------
 */
-void lst_del(atom_t* obj) {
-    lst_assert(obj, "lst_del");
+void list_del(atom_t* obj) {
+    list_assert(obj, "list_del");
 
 #ifdef DEBUG
 char* dbg_s = atom_tostr(obj);
-printf("....  lst_del:                 Deallocating %s\n", dbg_s);
+printf("....  list_del:                Deallocating %s\n", dbg_s);
 safe_free(dbg_s);
 #endif
 
-    int i;
     list_t* l = obj->val.list;
     atom_t* item;
     l->lock = 1;  // lock this object
 
     // Deallocate bound objects
-    for (i = 0; i < l->len; ++i) {
+    for (int i = 0; i < l->len; ++i) {
         item = l->items[i];
         if (!(atom_is_container(item) && item->val.list->lock)) {
             atom_unbind(item, obj);
@@ -64,48 +64,48 @@ safe_free(dbg_s);
 
     // Deallocate the rest
     safe_free(l->items);  // free items
-    lst_free(l->bindlist);
+    list_free(l->bindlist);
     safe_free(l);         // free list
     safe_free(obj);       // free object
 }
 
 /*
 --------------------------------------
-lst_cp
+list_cp
 
     Copy a list (subroutine for atom_cp).
 --------------------------------------
 */
-atom_t* lst_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
-    int i = lst_idx(objects, obj);
+atom_t* list_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
+    int i = list_idx(objects, obj);
     if (i != -1)
         return copies->val.list->items[i];  // object already has a copy
 
-    atom_t* copy = lst();
-    lst_add_nobind(objects, obj);
-    lst_add_nobind(copies, copy);
+    atom_t* copy = list();
+    list_add_h(objects, obj);
+    list_add_h(copies, copy);
 
     atom_t** items = obj->val.list->items;
-    for (i = 0; i < lst_len(obj); ++i)
-        lst_add(copy, atom_cp(items[i], objects, copies));
+    for (i = 0; i < list_len(obj); ++i)
+        list_add(copy, atom_cp(items[i], objects, copies));
     return copy;
 }
 
 /*
 --------------------------------------
-lst_insert
+list_insert
 
     Insert item to list at given index.
 --------------------------------------
 */
-void lst_insert(atom_t* list, int index, atom_t* item, char bind) {
-    lst_assert(list, "lst_ins");
+void list_insert(atom_t* obj, int index, atom_t* item, char bind) {
+    list_assert(obj, "list_ins");
     if (!item) {
-        printf("\x1b[95m" "Fatal error: lst_ins: bad item!\n" "\x1b[0m");
+        printf("\x1b[95m" "Fatal error: list_ins: bad item!\n" "\x1b[0m");
         exit(EXIT_FAILURE);
     }
 
-    list_t* l = list->val.list;
+    list_t* l = obj->val.list;
 
     // Allocate more space if necessary
     if (l->len == l->maxlen) {
@@ -124,49 +124,86 @@ void lst_insert(atom_t* list, int index, atom_t* item, char bind) {
     l->items[index] = item;
     ++l->len;
     if (bind)
-        atom_bind(item, list);
+        atom_bind(item, obj);
 }
 
 /*
 --------------------------------------
-lst_idx
+list_idx
 
     Return an index of an item in list, or -1.
 --------------------------------------
 */
-int lst_idx(atom_t* list, atom_t* item) {
-    lst_assert(list, "lst_idx");
+int list_idx(atom_t* obj, atom_t* item) {
+    list_assert(obj, "list_idx");
     if (!item) {
-        printf("\x1b[95m" "Fatal error: lst_idx: bad item!\n" "\x1b[0m");
+        printf("\x1b[95m" "Fatal error: list_idx: bad item!\n" "\x1b[0m");
         exit(EXIT_FAILURE);
     }
     int i;
-    for (i = 0; i < lst_len(list); ++i)
-        if (list->val.list->items[i] == item)
+    for (i = 0; i < list_len(obj); ++i)
+        if (obj->val.list->items[i] == item)
             break;
-    if (i == lst_len(list))
+    if (i == list_len(obj))
         i = -1;
     return i;
 }
 
 /*
 --------------------------------------
-lst_remove
+list_lookup
+
+    Object lookup in a SORTED list.
+    Returns 1 if object is found, 0 otherwise. Leaves index in *idx.
+--------------------------------------
+*/
+int list_lookup(atom_t* obj, atom_t* item, int* idx) {
+    list_assert(obj, "list_lookup");
+    *idx = 0;
+
+    if (!list_len(obj))  // list is empty
+        return 0;
+
+    atom_t** items = obj->val.list->items;
+    int hit = 0, left = 1, right = list_len(obj);
+
+    while (left <= right) {
+        *idx = left + ((right - left) >> 1);
+        if (items[*idx-1] > item) {
+            if ((right = *idx - 1) < left) {
+                (*idx)--;
+                break;
+            }
+        } else if (items[*idx-1] < item) {
+            left = *idx + 1;
+        } else {
+            hit = 1;
+            (*idx)--;
+            break;
+        }
+    }
+
+    return hit;
+}
+
+/*
+--------------------------------------
+list_remove
 
     Remove item at index from the list.
 --------------------------------------
 */
-void lst_remove(atom_t* list, int index, char unbind) {
-    lst_assert(list, "lst_rem");
-    if (index >= lst_len(list) || index < 0) {
-        printf("\x1b[95m" "Fatal error: lst_rem: index is out of range!\n" "\x1b[0m");
+void list_remove(atom_t* obj, int index, char unbind) {
+    list_assert(obj, "list_rem");
+    if (index >= list_len(obj) || index < 0) {
+        printf("\x1b[95m" "Fatal error: list_rem: index is out of range!\n" "\x1b[0m");
         exit(EXIT_FAILURE);
     }
 
-    list_t* l = list->val.list;
+    list_t* l = obj->val.list;
 
     if (unbind) {
-        atom_unbind(l->items[index], list);
+        atom_unbind(l->items[index], obj);
         atom_del(l->items[index]);
     }
 
@@ -176,46 +213,34 @@ void lst_remove(atom_t* list, int index, char unbind) {
 
 /*
 --------------------------------------
-lst_tostr
+list_tostr
 
     Make a stiring representing list.
 --------------------------------------
 */
-char* lst_tostr(atom_t* list, int depth) {
-    char buf[1024];
+char* list_tostr(atom_t* obj, int depth) {
+    list_assert(obj, "list_tostr");
+    atom_t** items = obj->val.list->items;
     char* o;
+    char buf[1024];
     char ellipsis = 0;
-    atom_t** items = list->val.list->items;
     strcpy(buf, "(");
 
-    for (int i = 0; i < lst_len(list); ++i) {
+    for (int i = 0; i < list_len(obj); ++i) {
 
         if (ellipsis || strlen(buf) > 1000) {
             strcat(buf, " ... ");
             break;
-
-        } else if (items[i]->type == LIST) {
-            if (depth) {
-                o = lst_tostr(items[i], depth - 1);
-                if (strlen(buf) + strlen(o) > 1000)
-                    ellipsis = 1;
-                else
-                    strcat(buf, o);
-                safe_free(o);
-            } else {
-                strcat(buf, "(...)");
-            }
-
-        } else {
-            o = atom_tostr(items[i]);
-            if (strlen(buf) + strlen(o) > 1000)
-                ellipsis = 1;
-            else
-                strcat(buf, o);
-            safe_free(o);
         }
 
-        if (i < lst_len(list) - 1)
+        o = atom_tostring(items[i], depth ? depth - 1 : depth);
+        if (strlen(buf) + strlen(o) > 1000)
+            ellipsis = 1;
+        else
+            strcat(buf, o);
+        safe_free(o);
+
+        if (i < list_len(obj) - 1)
             strcat(buf, " ");
     }
 
@@ -227,69 +252,72 @@ char* lst_tostr(atom_t* list, int depth) {
 
 /*
 --------------------------------------
-lst_print
+list_print
 
     Print a list.
 --------------------------------------
 */
-void lst_print(atom_t* list, int depth) {
-    lst_assert(list, "lst_print");
-    lst_pr(list, depth);
-    putchar('\n');
-}
-
-/* Print list recursively. */
-void lst_pr(atom_t* list, int depth) {
-    atom_t** items = list->val.list->items;
+void list_print(atom_t* obj, int depth) {
+    list_assert(obj, "list_print");
+    atom_t** items = obj->val.list->items;
     char* o;
     printf("(");
-    for (int i = 0; i < lst_len(list); ++i) {
-        if (items[i]->type == LIST) {
-            if (depth)
-                lst_pr(items[i], depth - 1);
-            else
-                printf("(...)");
-        } else {
-            o = atom_tostr(items[i]);
-            printf("%s", o);
-            safe_free(o);
-        }
-        if (i < lst_len(list) - 1)
+    for (int i = 0; i < list_len(obj); ++i) {
+
+        o = atom_tostring(items[i], depth ? depth - 1 : depth);
+        printf("%s", o);
+        safe_free(o);
+
+        if (i < list_len(obj) - 1)
             putchar(' ');
     }
-    printf(")");
+    printf(")\n");
 }
 
+/*
+--------------------------------------
+list_assert
 
-// ---------------------------------------------------------------------- 
-// Auxiliary
-
-/* Assert that object exists and is of LIST type. */
-void lst_assert(atom_t* obj, const char* fname) {
+    Assert that object exists and is of LIST type.
+--------------------------------------
+*/
+void list_assert(atom_t* obj, const char* fname) {
     if (!(obj && obj->type == LIST)) {
         printf("\x1b[95m" "Fatal error: %s: not a list!\n" "\x1b[0m", fname);
         exit(EXIT_FAILURE);
     }
 }
 
-/* Return list length. */
-int lst_len(atom_t* list) {
-    return list->val.list->len;
-}
+/*
+--------------------------------------
+list_len
 
-/* Return list maximum lenght. */
-int lst_maxlen(atom_t* list) {
-    return list->val.list->maxlen;
+    Return list length.
+--------------------------------------
+*/
+int list_len(atom_t* obj) {
+    return obj->val.list->len;
 }
 
 /*
 --------------------------------------
-lst_free
+list_maxlen
+
+    Return list maximum length.
+--------------------------------------
+*/
+int list_maxlen(atom_t* obj) {
+    return obj->val.list->maxlen;
+}
+
+/*
+--------------------------------------
+list_free
 
     Deallocate list object, ignore items.
 --------------------------------------
 */
-void lst_free(atom_t* obj) {
+void list_free(atom_t* obj) {
     if (obj) {
         safe_free(obj->val.list->items);  // free items
         safe_free(obj->val.list);         // free list

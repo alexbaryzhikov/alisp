@@ -8,7 +8,7 @@ coposed of atom list nodes as branches and other atom types as leaves.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <alisp.h>
+#include "alisp.h"
 
 token_t** tokens = NULL;        // list of tokens
 token_t** tok = NULL;           // token pointer
@@ -45,13 +45,13 @@ printf("....  parse:                   %d tokens found\n", tok_len());
         return item;
 
     } else {                        // multiple items
-        atom_t* ptree = lst();
-        lst_add(ptree, sym("block"));
-        lst_add(ptree, item);
+        atom_t* ptree = list();
+        list_add(ptree, sym("block"));
+        list_add(ptree, item);
 
         while (tok != tok_end) {
             if ((item = read_from_tokens())) {
-                lst_add(ptree, item);
+                list_add(ptree, item);
             } else {
                 atom_del(ptree);
                 tokens_del();
@@ -73,16 +73,16 @@ atom_t* read_from_tokens() {
     token_t* token = *tok++;
 
     if (streq(token->val, "(")) {
-        atom_t* list = lst();
+        atom_t* l = list();
         atom_t* a;
         while (!streq((*tok)->val, ")")) {
             if ((a = read_from_tokens()))
-                lst_add(list, a);
+                list_add(l, a);
             else
                 return NULL;
         }
         ++tok;  // pop ')'
-        return list;
+        return l;
 
     } else if (streq(token->val, ")")) {
         errmsg("Syntax", "unexpected ')'", token->pos, input);

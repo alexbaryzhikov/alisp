@@ -5,7 +5,7 @@ Atomic object: basic Alisp data type.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 atom_t nilobj = {{}, NIL, 1};
 
@@ -68,9 +68,6 @@ atom_t* func(atom_t* params, atom_t* body, atom_t* env) {
     obj->type = FUNCTION;
     obj->bindings = 0;
 
-    // Bind object to environment
-    atom_bind(obj, env);
-
     // Bind members
     atom_bind(function->params, obj);
     atom_bind(function->body, obj);
@@ -78,7 +75,7 @@ atom_t* func(atom_t* params, atom_t* body, atom_t* env) {
     // Bind enclosing environments
     for (atom_t* e = env; e && e != global_env; e = e->val.dict->parent)
         atom_bind(e, obj);
-    
+
     return obj;
 
 }
@@ -122,7 +119,7 @@ safe_free(dbg_s);
     atom_del(f->params);
     atom_unbind(f->body, obj);
     atom_del(f->body);
-    lst_free(f->bindlist);
+    list_free(f->bindlist);
     safe_free(f);
     safe_free(obj);
 }
@@ -137,31 +134,34 @@ atom_del
 */
 void atom_del(atom_t* a) {
     assert_arg(a, "atom_del");
+    
+    // Check if object is good for deletion
+    if ((a->type == NIL) || (atom_is_container(a) && a->val.list->lock) ||
+        (a->bindings && (!atom_is_container(a) || atom_bound_in(a, active_env))))
+        return;
 
 #ifdef DEBUG
 char* dbg_s = atom_tostr(a);
 #endif
 
-    // Check if object is bound
-    if (a->type == NIL || (a->bindings && (!atom_is_container(a) || atom_bound_in(a, active_env))))
-        return;
-
-    if (a->type == NUMBER || a->type == SYMBOL) {
+    switch (a->type) {
+    
+    case LIST:
+        list_del(a);
+        break;
+    
+    case DICTIONARY:
+        dict_del(a);
+        break;
+    
+    case FUNCTION:
+        func_del(a);
+        break;
+    
+    default:
         safe_free(a->val.num);
         safe_free(a);
-
-    } else if (a->type == LIST) {
-        lst_del(a);
-
-    } else if (a->type == DICTIONARY) {
-        dict_del(a);
-
-    } else if (a->type == FUNCTION) {
-        func_del(a);
-    
-    } else if (a->type == STD_OP) {
-        safe_free(a->val.oper);
-        safe_free(a);
+        break;
     }
 
 #ifdef DEBUG
@@ -178,7 +178,7 @@ atom_tostr
     Return a string representing an object.
 --------------------------------------
 */
-char* atom_tostr(atom_t* obj) {
+char* atom_tostring(atom_t* obj, int depth) {
     assert_arg(obj, "atom_tostr");
 
     char tmp[64];
@@ -198,12 +198,21 @@ char* atom_tostr(atom_t* obj) {
         s = malloc(strlen(obj->val.sym) + 1);
         strcpy(s, obj->val.sym);
         return s;
+        break;
 
     case LIST:
-        return lst_tostr(obj, 1);
+        if (depth)
+            return list_tostr(obj, depth);
+        else
+            strcpy(tmp, "(...)");
+        break;
 
     case DICTIONARY:
-        return dict_tostr(obj);
+        if (depth)
+            return dict_tostr(obj, depth);
+        else
+            strcpy(tmp, "{...}");
+        break;
 
     case FUNCTION:
         sprintf(tmp, "<Function at 0x%lx>", (size_t)obj);
@@ -216,7 +225,6 @@ char* atom_tostr(atom_t* obj) {
     default:
         sprintf(tmp, "<Object at 0x%lx>", (size_t)obj);
         break;
-
     }
     
     s = malloc(strlen(tmp) + 1);
@@ -233,11 +241,11 @@ atom_copy
 */
 atom_t* atom_copy(atom_t* obj) {
     assert_arg(obj, "atom_copy");
-    atom_t* objects = lst();
-    atom_t* copies = lst();
+    atom_t* objects = list();
+    atom_t* copies = list();
     atom_t* copy = atom_cp(obj, objects, copies);
-    lst_free(objects);
-    lst_free(copies);
+    list_free(objects);
+    list_free(copies);
     return copy;
 }
 
@@ -255,7 +263,7 @@ atom_t* atom_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
         return sym(obj->val.sym);
 
     case LIST:
-        return lst_cp(obj, objects, copies);
+        return list_cp(obj, objects, copies);
 
     case DICTIONARY:
         return dict_cp(obj, objects, copies);
@@ -306,8 +314,8 @@ void atom_bind(atom_t* obj, atom_t* container) {
     ++obj->bindings;
     if (atom_is_container(obj)) {
         if (!obj->val.list->bindlist)
-            obj->val.list->bindlist = lst();
-        lst_add_nobind(obj->val.list->bindlist, container);
+            obj->val.list->bindlist = list();
+        list_add_h(obj->val.list->bindlist, container);
     }
 }
 
@@ -321,12 +329,12 @@ atom_unbind
 void atom_unbind(atom_t* obj, atom_t* container) {
     --obj->bindings;
     if (atom_is_container(obj) && obj->val.list->bindlist) {
-        int idx = lst_idx(obj->val.list->bindlist, container);
+        int idx = list_idx(obj->val.list->bindlist, container);
         if (idx == -1) {
             printf("\x1b[95m" "Fatal error: unbind: container is not in bind list!\n" "\x1b[0m");
             exit(EXIT_FAILURE);
         }
-        lst_rem_nounbind(obj->val.list->bindlist, idx);
+        list_rem_h(obj->val.list->bindlist, idx);
     }
 }
 
@@ -346,8 +354,8 @@ int atom_bound_in(atom_t* obj, atom_t* env) {
         exit(EXIT_FAILURE);
     }
     
-    atom_t* owners = lst();
-    atom_get_owners(obj, owners);
+    atom_t* owners = list();
+    atom_get_owners_r(obj, owners);
     int bound = 0;
     atom_t* e;
     
@@ -358,18 +366,18 @@ int atom_bound_in(atom_t* obj, atom_t* env) {
                 break;
             }
     
-    lst_free(owners);
+    list_free(owners);
     return bound;
 }
 
 /*
 --------------------------------------
-atom_get_owners
+atom_get_owners_r
 
     Create a list of all objects through which a given object can be reached.
 --------------------------------------
 */
-void atom_get_owners(atom_t* obj, atom_t* ownlist) {
+void atom_get_owners_r(atom_t* obj, atom_t* ownlist) {
     if (!(obj && atom_is_container(obj))) {
         printf("\x1b[95m" "Fatal error: get_owners: bad object!\n" "\x1b[0m");
         exit(EXIT_FAILURE);
@@ -385,12 +393,9 @@ void atom_get_owners(atom_t* obj, atom_t* ownlist) {
 
     for (int i = 0; i < bl->len; ++i) {
         item = bl->items[i];
-        // char* s = atom_tostr(item);
-        // printf(".... atom_get_owners: %s\n", s);
-        // safe_free(s);
-        if (lst_idx(ownlist, item) == -1) {
-            lst_add_nobind(ownlist, item);   // add item itself
-            atom_get_owners(item, ownlist);  // add item owners
+        if (list_idx(ownlist, item) == -1) {
+            list_add_h(ownlist, item);   // add item itself
+            atom_get_owners_r(item, ownlist);  // add item owners
         }
     }
 }

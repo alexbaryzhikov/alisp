@@ -6,7 +6,7 @@ Can be run in REPL mode and/or to interpret a source file.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 char* input = NULL;
 
@@ -195,7 +195,7 @@ void magic() {
                "  $about            Info about the program.\n");
 
     } else if (streq(input + 1, "env")) {
-        dict_print(global_env);
+        dict_print(global_env, 2);
 
     } else if (streq(input + 1, "exit")) {
         safe_free(input);

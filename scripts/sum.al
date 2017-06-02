@@ -32,17 +32,26 @@
     (* (sigma f (+ a (/ dx 2)) add_dx b) dx)))
 
 
-# Test integral
+# Tests
+
+(def si (sum_int 1 10))
+(if (== si 55)
+    (println "OK -- Sum of integers in range [1, 10]: " si)
+    (println "FAIL -- Sum of integers in range [1, 10]: " si))
+
+(def sc (sum_cubes 1 10))
+(if (== sc 3025)
+    (println "OK -- Sum of cubes of integers in range [1, 10]: " sc)
+    (println "FAIL -- Sum of cubes of integers in range [1, 10]: " sc))
+
+(def ps (* 8 (pi_sum 1 2000)))
+(if (< (abs (- PI ps)) 0.01)
+    (println "OK -- Approximate value of Pi: " ps)
+    (println "FAIL -- Approximate value of Pi: " ps))
 
 (def cube (func (x) (* x x x)))
-
 (def i1 (integral cube 0 1 0.01))
 (def i2 (integral cube 0 1 0.001))
-
-(if (< (abs (- 0.25 i1)) 0.01)
-    (println "OK -- Intergral of f(x) = x^3 on the interval 0..1 is " i1)
-    (println "FAIL -- Intergral of f(x) = x^3 on the interval 0..1 is " i1))
-
 (if (< (abs (- 0.25 i2)) 0.001)
     (println "OK -- Intergral of f(x) = x^3 on the interval 0..1 is " i2)
     (println "FAIL -- Intergral of f(x) = x^3 on the interval 0..1 is " i2))

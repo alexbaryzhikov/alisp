@@ -217,3 +217,26 @@
 (if (== ((list_get hf 0)) 1)
     (println "OK -- Hidden function export")
     (println "FAIL -- Hidden function export"))
+
+
+# -----------------------------------------------------------------------------
+# Higher order functions
+
+# sigma: summation of a series
+(def sigma (func (term a next b)
+    (def iter (func (i result)
+        (if (> i b)
+            result
+            (iter (next i) (+ (term i) result)))))
+    (iter a 0)))
+
+# sum_int: sum of integers in range [a, b]
+(def sum_int (func (a b)
+    (def id (func (x) x))
+    (sigma id a (func (x) (+ x 1)) b)))
+
+(= tmp (sum_int 1 10))
+
+(if (== tmp 55)
+    (println "OK -- Sum of range [1, 10]: " tmp)
+    (println "FAIL -- Sum of range [1, 10]: " tmp))

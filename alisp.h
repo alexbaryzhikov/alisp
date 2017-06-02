@@ -74,50 +74,46 @@ atom_t* num(double);
 atom_t* sym(const char*);
 atom_t* func(atom_t*, atom_t*, atom_t*);
 void    atom_del(atom_t*);
-char*   atom_tostr(atom_t*);
+char*   atom_tostring(atom_t*, int);
 atom_t* atom_copy(atom_t*);
 atom_t* atom_cp(atom_t*, atom_t*, atom_t*);
 char*   atom_type(atom_t*);
 void    atom_bind(atom_t*, atom_t*);
 void    atom_unbind(atom_t*, atom_t*);
 int     atom_bound_in(atom_t*, atom_t*);
-void    atom_get_owners(atom_t*, atom_t*);
+void    atom_get_owners_r(atom_t*, atom_t*);
 int     atom_is_container(atom_t*);
 void    assert_arg(atom_t*, const char*);
 
+#define atom_tostr(obj) atom_tostring(obj, 2)
 
 // ---------------------------------------------------------------------- 
 // list.c
 
-atom_t* lst(void);
-void    lst_del(atom_t*);
-atom_t* lst_cp(atom_t*, atom_t*, atom_t*);
-void    lst_insert(atom_t*, int, atom_t*, char);
-int     lst_idx(atom_t*, atom_t*);
-void    lst_remove(atom_t*, int, char);
-char*   lst_tostr(atom_t*, int);
-void    lst_print(atom_t*, int);
-void    lst_pr(atom_t*, int);
-void    lst_assert(atom_t*, const char*);
-int     lst_len(atom_t*);
-int     lst_maxlen(atom_t*);
-void    lst_free(atom_t*);
+atom_t* list();
+void    list_del(atom_t*);
+atom_t* list_cp(atom_t*, atom_t*, atom_t*);
+void    list_insert(atom_t*, int, atom_t*, char);
+int     list_idx(atom_t*, atom_t*);
+int     list_lookup(atom_t*, atom_t*, int*);
+void    list_remove(atom_t*, int, char);
+char*   list_tostr(atom_t*, int);
+void    list_print(atom_t*, int);
+void    list_assert(atom_t*, const char*);
+int     list_len(atom_t*);
+int     list_maxlen(atom_t*);
+void    list_free(atom_t*);
 
-#define lst_ins(list, idx, item)    lst_insert(list, idx, item, 1)
-#define lst_add(list, item)         lst_insert(list,  -1, item, 1)
-#define lst_add_nobind(list, item)  lst_insert(list,  -1, item, 0)
-#define lst_rem(list, idx)          lst_remove(list, idx, 1)
-#define lst_rem_nounbind(list, idx) lst_remove(list, idx, 0)
+#define list_ins(list, idx, item)    list_insert(list, idx, item, 1)
+#define list_ins_h(list, idx, item)  list_insert(list, idx, item, 0)
+#define list_add(list, item)         list_insert(list,  -1, item, 1)
+#define list_add_h(list, item)       list_insert(list,  -1, item, 0)
+#define list_rem(list, idx)          list_remove(list, idx, 1)
+#define list_rem_h(list, idx)        list_remove(list, idx, 0)
 
 
 // ---------------------------------------------------------------------- 
 // dict.c
-
-/* Results of key lookup */
-typedef struct {
-    int miss;
-    int idx;
-} lookup_t;
 
 atom_t*  dict(int, atom_t*);
 void     dict_del(atom_t*);
@@ -125,11 +121,10 @@ atom_t*  dict_cp(atom_t*, atom_t*, atom_t*);
 void     dict_add(atom_t*, char*, atom_t*);
 atom_t*  dict_get(atom_t*, char*);
 atom_t*  dict_find(atom_t*, char*);
-char*    dict_tostr(atom_t*);
-void     dict_print(atom_t*);
+int      dict_lookup(atom_t*, char*, int*);
+char*    dict_tostr(atom_t*, int);
+void     dict_print(atom_t*, int);
 void     dict_assert(atom_t*, const char*);
-void     key_lookup(char**, char*, int, lookup_t*);
-lookup_t dict_lookup(dict_t*, char*);
 
 
 // ---------------------------------------------------------------------- 
@@ -269,4 +264,3 @@ double op_fmod(double, double);
 
 
 # endif
-

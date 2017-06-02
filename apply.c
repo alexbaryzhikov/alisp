@@ -5,7 +5,7 @@ Apply a procedure to arguments.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 /*
 --------------------------------------
@@ -16,7 +16,7 @@ apply
 */
 atom_t* apply(atom_t* expr, atom_t* proc, atom_t* args) {
 
-    int argc = lst_len(args);
+    int argc = list_len(args);
     atom_t** argv = args->val.list->items;
     atom_t* env = active_env;
 
@@ -28,9 +28,9 @@ atom_t* apply(atom_t* expr, atom_t* proc, atom_t* args) {
     // -------------------------------------
     // function
     } else if (proc->type == FUNCTION) {
-        if (argc != lst_len(proc->val.func->params)) {
+        if (argc != list_len(proc->val.func->params)) {
             errmsg("Syntax", "wrong number of arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
 
@@ -112,15 +112,15 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
                optype == MATH1_M ) {  // with mutation
         if (argc == 0) {
             errmsg("Syntax", "no arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argc > 1) {
             errmsg("Syntax", "too many arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != NUMBER) {
             errmsg("Semantic", "wrong type of argument", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
 
@@ -136,11 +136,11 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == MATH2) {
         if (argc != 2) {
             errmsg("Syntax", "wrong number of arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != NUMBER || argv[1]->type != NUMBER) {
             errmsg("Semantic", "wrong type of argument", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
 
@@ -151,7 +151,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == MATH2_R) {
         if (argc == 0) {
             errmsg("Syntax", "no arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
 
@@ -159,7 +159,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         for (i = 0; i < argc; ++i)
             if (argv[i]->type != NUMBER) {
                 errmsg("Semantic", "wrong type of argument", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
         
@@ -178,12 +178,12 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == REL) {
         if (argc != 2 ) {
             errmsg("Syntax", "wrong number of arguments", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if ((argv[0]->type != NUMBER || argv[1]->type != NUMBER) &&
                    (argv[0]->type != SYMBOL || argv[1]->type != SYMBOL)) {
             errmsg("Semantic", "wrong type of argument", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
 
@@ -197,7 +197,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == COPY) {
         if (argc != 1) {
             errmsg("Syntax", "wrong number of arguments: (copy object)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         return atom_copy(argv[0]);
@@ -207,7 +207,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == TYPE) {
         if (argc != 1) {
             errmsg("Syntax", "wrong number of arguments: (type object)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         char* s = add_quotes(atom_type(argv[0]));
@@ -218,10 +218,10 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     // -------------------------------------
     // list             (list [items...])
     } else if (optype == LIST_NEW) {
-        atom_t* v = lst();
+        atom_t* v = list();
         // Assemble list
         for (int i = 0; i < argc; ++i)
-            lst_add(v, argv[i]);
+            list_add(v, argv[i]);
         return v;
 
     // -------------------------------------
@@ -230,39 +230,39 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         if (argc < 2 || argc > 3) {
             errmsg("Syntax", "wrong number of arguments: (list_get list index [index2])",
                 NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        atom_t* list = argv[0];
-        int llen = lst_len(list);
+        atom_t* obj = argv[0];
+        int llen = list_len(obj);
         // Return single item
         if (argc == 2) {  
             // Evaluate index
             atom_t* index = argv[1];
             if (index->type != NUMBER) {
                 errmsg("Semantic", "index is not a number", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
                 (int)(*index->val.num);
             if (idx < 0 || idx >= llen) {
                 errmsg("Semantic", "index is out of range", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
-            return list->val.list->items[idx];
+            return obj->val.list->items[idx];
         }
         // Return list, that is sublist in range [index, index2)
         // Evaluate index
         atom_t* index = argv[1];
         if (index->type != NUMBER) {
             errmsg("Semantic", "index is not a number", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) :
@@ -273,7 +273,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         atom_t* index2 = argv[2];
         if (index2->type != NUMBER) {
             errmsg("Semantic", "index2 is not a number", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         int idx2 = (int)*index2->val.num < 0 ? llen + (int)(*index2->val.num) :
@@ -281,9 +281,9 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         if (idx2 > llen)
             idx2 = llen;
         // Assemble new list
-        atom_t* v = lst();
+        atom_t* v = list();
         for (int i = idx; i < idx2; ++i)
-            lst_add(v, list->val.list->items[i]);
+            list_add(v, obj->val.list->items[i]);
         return v;
 
     // -------------------------------------
@@ -291,30 +291,30 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == LIST_SET) {
         if (argc != 3) {
             errmsg("Syntax", "wrong number of arguments: (list_set list index item)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        atom_t* list = argv[0];
+        atom_t* obj = argv[0];
         atom_t* index = argv[1];
         atom_t* item = argv[2];
         if (index->type != NUMBER) {
             errmsg("Semantic", "index is not a number", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        int idx = (int)*index->val.num < 0 ? lst_len(list) + (int)(*index->val.num) : 
+        int idx = (int)*index->val.num < 0 ? list_len(obj) + (int)(*index->val.num) : 
             (int)(*index->val.num);
-        if (idx < 0 || idx >= lst_len(list)) {
+        if (idx < 0 || idx >= list_len(obj)) {
             errmsg("Semantic", "index is out of range", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        lst_rem(list, idx);
-        lst_ins(list, idx, item);
+        list_rem(obj, idx);
+        list_ins(obj, idx, item);
         return item;
 
     // -------------------------------------
@@ -322,29 +322,29 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == LIST_LEN) {
         if (argc != 1) {
             errmsg("Syntax", "wrong number of arguments: (list_len list)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        return num(lst_len(argv[0]));
+        return num(list_len(argv[0]));
 
     // -------------------------------------
     // list_add         (list_add list item [...])
     } else if (optype == LIST_ADD) {
         if (argc < 2) {
             errmsg("Syntax", "too few arguments: (list_add list item [...])", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         for (int i = 1; i < argc; ++i)
-            lst_add(argv[0], argv[i]);
+            list_add(argv[0], argv[i]);
         return argv[0];
 
     // -------------------------------------
@@ -352,19 +352,19 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == LIST_INS) {
         if (argc != 3) {
             errmsg("Syntax", "wrong number of arguments: (list_ins list index item)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        int llen = lst_len(argv[0]);
+        int llen = list_len(argv[0]);
         // Evaluate index
         atom_t* index = argv[1];
         if (index->type != NUMBER) {
             errmsg("Semantic", "index is not a number", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
@@ -372,7 +372,7 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
         if (idx < 0)
             idx = 0;
         // Insert item to list
-        lst_ins(argv[0], idx, argv[2]);
+        list_ins(argv[0], idx, argv[2]);
         return argv[0];
 
     // -------------------------------------
@@ -380,30 +380,30 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == LIST_REM) {
         if (argc != 2) {
             errmsg("Syntax", "wrong number of arguments: (list_rem list index)", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         } else if (argv[0]->type != LIST) {
             errmsg("Semantic", "not a list", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
-        int llen = lst_len(argv[0]);
+        int llen = list_len(argv[0]);
         // Evaluate index
         atom_t* index = argv[1];
         if (index->type != NUMBER) {
             errmsg("Semantic", "index is not a number", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         int idx = (int)*index->val.num < 0 ? llen + (int)(*index->val.num) : 
             (int)(*index->val.num);
         if (idx < 0 || idx >= llen) {
             errmsg("Semantic", "index is out of range", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         // Delete item from list
-        lst_rem(argv[0], idx);
+        list_rem(argv[0], idx);
         return argv[0];
 
     // -------------------------------------
@@ -411,26 +411,26 @@ atom_t* apply_op(atom_t* expr, atom_t* proc, int argc, atom_t** argv) {
     } else if (optype == LIST_MERGE) {
         if (argc < 2) {
             errmsg("Syntax", "too few arguments: (list_merge list1 list2 [...])", NULL, NULL);
-            lst_print(expr, 0);
+            list_print(expr, 0);
             return NULL;
         }
         int i, j;
         for (i = 0; i < argc; ++i)
             if (argv[i]->type != LIST) {
                 errmsg("Semantic", "not a list", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
         // Merge
-        atom_t* v = lst();
+        atom_t* v = list();
         for (i = 0; i < argc; ++i)
-            for (j = 0; j < lst_len(argv[i]); ++j)
-                lst_add(v, argv[i]->val.list->items[j]);
+            for (j = 0; j < list_len(argv[i]); ++j)
+                list_add(v, argv[i]->val.list->items[j]);
         return v;
     }
 
     printf("\x1b[95m" "Fatal error: apply_op: unknown operator!\n" "\x1b[0m");
-    lst_print(expr, 0);
+    list_print(expr, 0);
     exit(EXIT_FAILURE);
 }
 

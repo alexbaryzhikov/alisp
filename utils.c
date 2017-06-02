@@ -5,7 +5,7 @@ Utilities.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 
 // ---------------------------------------------------------------------- 

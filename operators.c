@@ -5,7 +5,7 @@ Operators.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <alisp.h>
+#include "alisp.h"
 
 
 // ---------------------------------------------------------------------- 

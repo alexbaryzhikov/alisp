@@ -7,10 +7,10 @@ Routines for standard operators and procedures.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <alisp.h>
+#include "alisp.h"
 
-atom_t* global_env = NULL;
-atom_t* active_env = NULL;
+atom_t* global_env;
+atom_t* active_env;
 
 /* Create global environment. */
 void globenv_init() {
@@ -111,6 +111,6 @@ void globenv_del() {
 printf("....  globenv_del:             Deallocating global environment\n");
 #endif
 
-    atom_del(global_env);  
+    atom_del(global_env);
 }
 

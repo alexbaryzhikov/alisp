@@ -7,7 +7,7 @@ Dictionary:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 /*
 --------------------------------------
@@ -35,6 +35,7 @@ atom_t* dict(int size, atom_t* parent) {
     obj->val.dict = d;
     obj->type = DICTIONARY;
     obj->bindings = 0;
+
     return obj;
 }
 
@@ -54,13 +55,12 @@ printf("....  dict_del:                Deallocating %s\n", dbg_s);
 safe_free(dbg_s);
 #endif
 
-    int i;
     dict_t* d = obj->val.dict;
     atom_t* item;
     d->lock = 1;  // lock this object
 
     // Deallocate bound objects
-    for (i = 0; i < d->len; ++i) {
+    for (int i = 0; i < d->len; ++i) {
         safe_free(d->keys[i]);  // free key string
         item = d->vals[i];
         if (!(atom_is_container(item) && item->val.list->lock)) {
@@ -72,7 +72,7 @@ safe_free(dbg_s);
     // Deallocate the rest
     safe_free(d->keys);     // free keys
     safe_free(d->vals);     // free vals
-    lst_free(d->bindlist);
+    list_free(d->bindlist);
     safe_free(d);           // free dictionary
     safe_free(obj);         // free object
 }
@@ -85,13 +85,13 @@ dict_cp
 --------------------------------------
 */
 atom_t* dict_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
-    int i = lst_idx(objects, obj);
+    int i = list_idx(objects, obj);
     if (i != -1)
         return copies->val.list->items[i];  // object already has a copy
 
     atom_t* copy = dict(obj->val.dict->maxlen, obj->val.dict->parent);
-    lst_add_nobind(objects, obj);
-    lst_add_nobind(copies, copy);
+    list_add_h(objects, obj);
+    list_add_h(copies, copy);
 
     char** keys = obj->val.dict->keys;
     atom_t** vals = obj->val.dict->vals;
@@ -99,7 +99,6 @@ atom_t* dict_cp(atom_t* obj, atom_t* objects, atom_t* copies) {
         dict_add(copy, keys[i], atom_cp(vals[i], objects, copies));
     return copy;
 }
-
 
 /*
 --------------------------------------
@@ -125,28 +124,28 @@ void dict_add(atom_t* dictionary, char* key, atom_t* value) {
     }
 
     // search for position to insert the key, so the list remains sorted
-    lookup_t kl = dict_lookup(d, key);
+    int idx, hit = dict_lookup(dictionary, key, &idx);
     
     // insert the key
-    if (kl.miss) {
+    if (!hit) {
         // offset keys and values to make a free spot
-        memmove(d->keys + kl.idx + 1, d->keys + kl.idx, (d->len - kl.idx) * sizeof(char*));
-        memmove(d->vals + kl.idx + 1, d->vals + kl.idx, (d->len - kl.idx) * sizeof(atom_t*));
+        memmove(d->keys + idx + 1, d->keys + idx, (d->len - idx) * sizeof(char*));
+        memmove(d->vals + idx + 1, d->vals + idx, (d->len - idx) * sizeof(atom_t*));
         ++d->len;
         // insert new key
-        d->keys[kl.idx] = malloc(strlen(key) + 1);
-        strcpy(d->keys[kl.idx], key);
+        d->keys[idx] = malloc(strlen(key) + 1);
+        strcpy(d->keys[idx], key);
         // insert new value
-        d->vals[kl.idx] = value;
+        d->vals[idx] = value;
         atom_bind(value, dictionary);
 
-    } else if (d->vals[kl.idx] != value) {
+    } else if (d->vals[idx] != value) {
         // delete old value
-        atom_t* oldval = d->vals[kl.idx];
+        atom_t* oldval = d->vals[idx];
         atom_unbind(oldval, dictionary);
         atom_del(oldval);
         // insert new value
-        d->vals[kl.idx] = value;
+        d->vals[idx] = value;
         atom_bind(value, dictionary);
     }
 }
@@ -165,14 +164,15 @@ atom_t* dict_get(atom_t* dictionary, char* key) {
         exit(EXIT_FAILURE);
     }
     dict_t* d = dictionary->val.dict;
-    lookup_t kl = dict_lookup(d, key);
-    if (kl.miss) {
+    int idx, hit = dict_lookup(dictionary, key, &idx);
+    if (hit) {
+        return d->vals[idx];
+    } else {
         if (d->parent)
             return dict_get(d->parent, key);
         else
             return NULL;
-    } else
-        return d->vals[kl.idx];
+    }
 }
 
 /*
@@ -189,14 +189,54 @@ atom_t* dict_find(atom_t* dictionary, char* key) {
         exit(EXIT_FAILURE);
     }
     dict_t* d = dictionary->val.dict;
-    lookup_t kl = dict_lookup(d, key);
-    if (kl.miss) {
+    int idx, hit = dict_lookup(dictionary, key, &idx);
+    if (hit) {
+        return dictionary;
+    } else {
         if (d->parent)
             return dict_find(d->parent, key);
         else
             return NULL;
-    } else
-        return dictionary;
+    }
+}
+
+/*
+--------------------------------------
+dict_lookup
+
+    Key lookup in a dictionary.
+    Returns 1 if key is found, 0 otherwise. Leaves index in *idx.
+--------------------------------------
+*/
+int dict_lookup(atom_t* dictionary, char* key, int* idx) {
+    dict_assert(dictionary, "dict_lookup");
+    *idx = 0;
+    int len = dictionary->val.dict->len;
+
+    if (!len)  // dictionary is empty
+        return 0;
+
+    char** keys = dictionary->val.dict->keys;
+    int tmp, hit = 0, left = 1, right = len;
+
+    while (left <= right) {
+        *idx = left + ((right - left) >> 1);
+        tmp = strcmp(key, keys[*idx-1]);
+        if (tmp < 0) {
+            if ((right = *idx - 1) < left) {
+                (*idx)--;
+                break;
+            }
+        } else if (tmp > 0) {
+            left = *idx + 1;
+        } else {
+            hit = 1;
+            (*idx)--;
+            break;
+        }
+    }
+
+    return hit;
 }
 
 /*
@@ -206,24 +246,27 @@ dict_tostr
     Create a string representing a dictionary.
 --------------------------------------
 */
-char* dict_tostr(atom_t* dictionary) {
+char* dict_tostr(atom_t* dictionary, int depth) {
     dict_assert(dictionary, "dict_tostr");
     dict_t* d = dictionary->val.dict;
-    char buf[1024];
     char* o;
+    char buf[1024];
     char ellipsis = 0;
     strcpy(buf, "{");
     for (int i = 0; i < d->len; ++i) {
+        
         if (d->vals[i]->type == STD_OP) {
             if (i == d->len - 1)
                 strcat(buf, " ... ");
             continue;
         }
+        
         if (ellipsis || strlen(buf) > 1000) {
             strcat(buf, " ... ");
             break;
         }
-        o = atom_tostr(d->vals[i]);
+        
+        o = atom_tostring(d->vals[i], depth ? depth - 1 : depth);
         if (strlen(buf) + strlen(d->keys[i]) + strlen(o) > 1000) {
             ellipsis = 1;
         } else {
@@ -232,6 +275,7 @@ char* dict_tostr(atom_t* dictionary) {
             strcat(buf, o);
         }
         safe_free(o);
+        
         if (i < d->len - 1)
             strcat(buf, ", ");
     }
@@ -248,13 +292,13 @@ dict_print
     Print all key:value pairs in a dictionary.
 --------------------------------------
 */
-void dict_print(atom_t* dictionary) {
+void dict_print(atom_t* dictionary, int depth) {
     dict_assert(dictionary, "dict_print");
     dict_t* d = dictionary->val.dict;
     printf("{\n");
     for (int i = 0; i < d->len; i++) {
         if (d->vals[i]->type != STD_OP) {
-            char* o = atom_tostr(d->vals[i]);
+            char* o = atom_tostring(d->vals[i], depth ? depth - 1 : depth);
             printf("  %s : %s\n", d->keys[i], o);
             safe_free(o);
         }
@@ -262,46 +306,16 @@ void dict_print(atom_t* dictionary) {
     printf("}\n");
 }
 
+/*
+--------------------------------------
+dict_assert
 
-// ---------------------------------------------------------------------- 
-// Auxiliary
-
-/* Assert that object exists and is of DICTIONARY type. */
+    Assert that object exists and is of DICTIONARY type.
+--------------------------------------
+*/
 void dict_assert(atom_t* obj, const char* fname) {
     if (!obj || obj->type != DICTIONARY) {
         printf("\x1b[95m" "Fatal error: %s: not a dictionary!\n" "\x1b[0m", fname);
         exit(EXIT_FAILURE);
     }
-}
-
-/* key_lookup: key lookup in a list of sorted keys.
-   Returns miss = {true if key miss}, idx = {position where key is or has to be}. */
-void key_lookup(char** keys, char* key, int len, lookup_t* res) {
-    res->miss = 1, res->idx = 0;
-    
-    if (!len)
-        return;  // empty list
-
-    int left = 1;
-    int right = len;
-
-    while (left <= right) {
-        res->idx = left + ((right - left) >> 1);
-        if ((res->miss = strcmp(key, keys[res->idx-1])) < 0) {
-            if ((right = res->idx - 1) < left) {
-                --res->idx;
-                break;
-            }
-        } else if (res->miss > 0) {
-            left = res->idx + 1;
-        } else {
-            --res->idx;
-            break;
-        }
-    }
-}
-
-/* Key lookup macro: d - dictionary, k - key. */
-lookup_t dict_lookup(dict_t* d, char* k) {
-    lookup_t x; key_lookup(d->keys, k, d->len, &x); return x;
 }

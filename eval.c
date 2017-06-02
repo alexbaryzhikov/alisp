@@ -5,7 +5,7 @@ Evaluate an expression in an environment.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alisp.h>
+#include "alisp.h"
 
 /*
 --------------------------------------
@@ -55,12 +55,12 @@ safe_free(dbg_s);
 
     if (expr->type == LIST) {
         atom_t** items = expr->val.list->items;
-        int elen = lst_len(expr);
+        int elen = list_len(expr);
 
         // -------------------------------------
         // empty list       ()
         if (elen == 0)
-            return lst();
+            return list();
 
         int is_sym = items[0]->type == SYMBOL;
 
@@ -70,11 +70,11 @@ safe_free(dbg_s);
             if (elen < 2) {
                 errmsg("Syntax", "poorly formed branching: (cond (clause expr)... [(else expr)])",
                     NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             } else {
                 for (int i = 1; i < elen; ++i)
-                    if (items[i]->type != LIST || lst_len(items[i]) < 2) {
+                    if (items[i]->type != LIST || list_len(items[i]) < 2) {
                         char* o = atom_tostr(items[i]);
                         errmsg("Syntax", "poorly formed conditional: (test expr [expr...])", o, o);
                         safe_free(o);
@@ -84,16 +84,16 @@ safe_free(dbg_s);
 
             // Iterate through clauses until test passes or 'else' encountered
             for (int i = 1; i < elen; ++i) {
-                int clen = lst_len(items[i]);
+                int clen = list_len(items[i]);
                 atom_t** clause = items[i]->val.list->items;
                 atom_t* test = clause[0];
                 // Assemble clause body
                 atom_t* body;
                 if (clen > 2) {     // provide a block for clause body
-                    body = lst();
-                    lst_add(body, sym("block"));
+                    body = list();
+                    list_add(body, sym("block"));
                     for (int j = 1; j < clen; ++j)
-                        lst_add(body, clause[j]);
+                        list_add(body, clause[j]);
                 } else              // clause body is a single expression
                     body = clause[1];
                 // Check if 'else' is encountered
@@ -111,7 +111,7 @@ safe_free(dbg_s);
                 if (!(test->type == NIL ||
                      (test->type == NUMBER && *test->val.num == 0) ||
                      (test->type == SYMBOL && strlen(test->val.sym) == 0) ||
-                     (test->type == LIST && lst_len(test) == 0))) {
+                     (test->type == LIST && list_len(test) == 0))) {
                     atom_del(test);
                     atom_t* v = eval(body, env, ret);
                     active_env = env;
@@ -130,7 +130,7 @@ safe_free(dbg_s);
         } else if (is_sym && streq(items[0]->val.sym, "if")) {
             if (elen < 3 || elen > 4) {
                 errmsg("Syntax", "poorly formed branching: (if test pro [con])", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             atom_t* test = eval(items[1], env, NULL);
@@ -140,7 +140,7 @@ safe_free(dbg_s);
             if (test->type == NIL ||
                (test->type == NUMBER && *test->val.num == 0) ||
                (test->type == SYMBOL && strlen(test->val.sym) == 0) ||
-               (test->type == LIST && lst_len(test) == 0)) {
+               (test->type == LIST && list_len(test) == 0)) {
                 atom_del(test);
                 if (elen == 4)
                     return eval(items[3], env, ret);
@@ -155,17 +155,17 @@ safe_free(dbg_s);
         } else if (is_sym && streq(items[0]->val.sym, "def")) {
             if (elen < 2 || elen > 3) {
                 errmsg("Syntax", "poorly formed definition: (def var [expr])", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             } else if (items[1]->type != SYMBOL) {
                 errmsg("Semantic", "argument is not a variable name", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             } else {
                 atom_t* e = dict_find(env, items[1]->val.sym);
                 if (e && e == env) {
                     errmsg("Semantic", "variable has already been defined", NULL, NULL);
-                    lst_print(expr, 0);
+                    list_print(expr, 0);
                     return NULL;
                 }
             }
@@ -187,11 +187,11 @@ safe_free(dbg_s);
         } else if (is_sym && streq(items[0]->val.sym, "=")) {
             if (elen != 3) {
                 errmsg("Syntax", "poorly formed assignment: (= var expr)", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             } else if (items[1]->type != SYMBOL) {
                 errmsg("Semantic", "argument is not a variable name", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             // TODO: check for reserved symbols
@@ -214,7 +214,7 @@ safe_free(dbg_s);
         } else if (is_sym && streq(items[0]->val.sym, "null?")) {
             if (elen != 2) {
                 errmsg("Syntax", "poorly formed expression: (null? expr)", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             atom_t* v = eval(items[1], env, NULL);
@@ -233,22 +233,22 @@ safe_free(dbg_s);
         } else if (is_sym && streq(items[0]->val.sym, "func")) {
             if (elen < 3 || items[1]->type != LIST) {
                 errmsg("Syntax", "poorly formed function definition: (func ([var ...]) body)", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             // Check that all parameters are indeed symbols
             int i;
-            for (i = 0; i < lst_len(items[1]); ++i)
+            for (i = 0; i < list_len(items[1]); ++i)
                 if (items[1]->val.list->items[i]->type != SYMBOL) {
                     errmsg("Semantic", "parameter is not a variable name", NULL, NULL);
-                    lst_print(expr, 0);
+                    list_print(expr, 0);
                     return NULL;
                 }
             // Make function body
-            atom_t* body = lst();
-            lst_add(body, sym("block"));
+            atom_t* body = list();
+            list_add(body, sym("block"));
             for (i = 2; i < elen; ++i)
-                lst_add(body, items[i]);
+                list_add(body, items[i]);
             
             atom_t* v = func(items[1], body, env);
             atom_del(body);
@@ -277,11 +277,11 @@ safe_free(dbg_s);
             // Evaluate items[1] and pass it to ret
             if (elen != 2) {
                 errmsg("Syntax", "poorly formed return statement: (ret expr)", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             } else if (!ret) {
                 errmsg("Semantic", "stray return statement", NULL, NULL);
-                lst_print(expr, 0);
+                list_print(expr, 0);
                 return NULL;
             }
             return *ret = eval(items[1], env, NULL);
@@ -301,19 +301,23 @@ printf("....  eval:                    Evaluating procedure and arguments\n");
                 return NULL;
 
             // Evaluate arguments
-            atom_t* args = lst();
+            atom_t* args = list();
             atom_t* v;
             for (int i = 1; i < elen; ++i) {
                 v = eval(items[i], env, NULL);
                 active_env = env;
                 if (v) {
-                    lst_add(args, v);
+                    list_add(args, v);
                 } else {
                     atom_del(proc);
                     atom_del(args);
                     return NULL;
                 }
             }
+
+            // Protect procedure and arguments
+            atom_bind(proc, env);
+            atom_bind(args, env);
 
 #ifdef DEBUG
 dbg_s = atom_tostr(proc);
@@ -322,6 +326,7 @@ printf("....  eval:                    --> apply %s to %s\n", dbg_s, dbg_s2);
 safe_free(dbg_s);
 safe_free(dbg_s2);
 #endif
+
             // Apply
             v = apply(expr, proc, args);
             active_env = env;
@@ -333,6 +338,9 @@ printf("....  eval:                    Deallocating procedure and arguments\n");
 if (v) safe_free(dbg_s);
 #endif
 
+            // Deallocate procedure and arguments
+            atom_unbind(proc, env);
+            atom_unbind(args, env);
             if (v)
                 atom_bind(v, env);  // protect returned value
             atom_del(proc);
