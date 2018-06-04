@@ -1,14 +1,18 @@
-# The inner function is created within foo evironment,
-# but is not bound in it. It is exported via list. It
-# should be detected for ghosting of foo environment.
-(def hid (func()
+# The inner function is created within 'foo' environment.
+# It is not bound directly in it, but rather exported via
+# a list. This should be detected and 'foo' environment
+# should not be garbage collected after 'foo' returns,
+# because 'x' is reachable through anonymous function in
+# exported list.
+(def foo (func()
     (def x 0)
-    (list (func () 
+    (list (func ()
         (inc x)))))
 
-(def hf (hid))
-# Now 'a' is a list with anonimous function in it.
+(def bar (foo))
+
+# Now 'bar' is a list with anonymous function in it.
 # Let's call it.
-(if (== ((list_get hf 0)) 1)
+(if (== ((list_get bar 0)) 1)
     (println "OK -- Hidden function export")
     (println "FAIL -- Hidden function export"))
