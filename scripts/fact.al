@@ -5,4 +5,4 @@
         1
         (* n (fact (- n 1))))))
 
-(println "Factorial of 7: " (fact 7))
+(println "Factorial of 7: " (fact 5))

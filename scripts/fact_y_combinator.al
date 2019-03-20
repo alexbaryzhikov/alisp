@@ -4,11 +4,10 @@
 (def y_fact
     ((func (!)
         (func (n)
-            ((! !) n)))
-    (func (!)
-        (func (n)
-            (if (== n 0)
-                1
-                (* n ((! !) (- n 1))))))))
+            (! ! n)))
+    (func (! n)
+        (if (== n 0)
+            1
+            (* n (! ! (- n 1)))))))
 
-(println (y_fact 5))
+(println (y_fact 6))
