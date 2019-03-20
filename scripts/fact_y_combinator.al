@@ -1,5 +1,6 @@
-# Compute a factorial of a number
-# Do not use explicit self-reference
+# Ultimate test!
+#
+# Compute a factorial of a number, do not use explicit self-reference
 
 (def y_fact
     ((func (!)
